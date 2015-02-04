@@ -1,10 +1,10 @@
 # coding: utf-8
 from __future__ import division, print_function
-
 from collections import OrderedDict
 from datarow import datarow_constructor
 from itertools import compress, ifilterfalse, izip
 from types import GeneratorType
+
 import csv
 import cStringIO
 import ExcelRW
@@ -37,14 +37,11 @@ class DataTable(object):
 
         iterator = iterable.__iter__()
         first_row = iterator.next()
-        self.__data = OrderedDict.fromkeys(first_row)
-        for field in self.fields:
-            self.__data[field] = []
 
-        # TODO: handle construction with the special named tuples?
-        if isinstance(first_row, dict):  # Also identifies OrderedDict
+        # also identifies OrderedDict
+        if isinstance(first_row, dict):
             for field in self.fields:
-                self.__data[field].append(first_row[field])
+                self.__data[field] = [first_row[field]]
             for i, item in enumerate(iterator, 1):
                 for field in self.fields:
                     try:
@@ -59,6 +56,17 @@ class DataTable(object):
                                         "row %s was: %s" % (i, type(item)))
                     self.__data[field].append(value)
         elif isinstance(first_row, (list, tuple, GeneratorType)):
+            # identifies namedtuples, and similar, including this library's
+            # DataRow object. in their case, not only will the first row
+            # not be headers, but we must access `._fields` to get
+            # the header information. from then on, they should be the same.
+            if isinstance(first_row, tuple) and hasattr(first_row, '_fields'):
+                fieldnames = first_row._fields
+                for fieldname, value in izip(fieldnames, first_row):
+                    self.__data[fieldname] = [value]
+            else:
+                for fieldname in first_row:
+                    self.__data[fieldname] = []
             for i, item in enumerate(iterator):
                 if not isinstance(item, (list, tuple, GeneratorType)):
                     raise TypeError("Although the first row of your data "
@@ -271,7 +279,6 @@ class DataTable(object):
                 raise KeyError("DataTable does not have column `%s`" % item)
             return self.__data[item]
         elif isinstance(item, (int, long)):
-            # TODO: construct the relevant row
             return self.row(item)
         else:
             raise KeyError("DataTable does not support indexing with `%s`" %
@@ -338,26 +345,26 @@ class DataTable(object):
 
         These are called like:
 
-        >>> data.groupby('colors', sum='randnum')
+        data.groupby('colors', sum='randnum')
 
         Multiple groups can be called like:
 
-        >>> data.groupby('colors', 'apostle', min='randnum2', max='randnum2')
+        data.groupby('colors', 'apostle', min='randnum2', max='randnum2')
 
         Custom aggregation functions can be added easily. Below is an example
         that counts the length of the group list:
 
-        >>> data.groupby('colors', agg=len)
+        data.groupby('colors', agg=len)
 
         A more complex example of a custom aggregation function might be:
 
-        >>> aggfunc = lambda rows: ','.join(row['apostle'] for row in rows)
-        >>> data.groupby('colors', agg=aggfunc))
+        aggfunc = lambda rows: ','.join(row['apostle'] for row in rows)
+        data.groupby('colors', agg=aggfunc))
 
         Here's a cool recipe for a generalizeable concat:
 
-        >>> concat = lambda field: lambda rows: ",".join(r[field] for r in rows)
-        >>> data.groupby('colors', agg=concat('apostle'))
+        concat = lambda field: lambda rows: ",".join(r[field] for r in rows)
+        data.groupby('colors', agg=concat('apostle'))
 
         Consider taking into consideration this recipe taking advantage of
         closures when writing your own custom groupby code.
@@ -410,7 +417,7 @@ class DataTable(object):
                 groups[groupkey].append(row)
 
         new_table = DataTable()
-        # TODO: fix this according to Connelly article above.
+        # TODO: fix this with a new groupby object
         new_table[','.join(groupfields)] = [unicode(i) for i in groups.keys()]
 
         if not aggregation_functions:

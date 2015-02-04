@@ -9,18 +9,10 @@ def datarow_constructor(fields):
 
         __slots__ = ()
 
-        _fields = fields
+        _fields = tuple(fields)
 
-        def __new__(cls, args):
-            return tuple.__new__(cls, tuple(args))
-
-        @classmethod
-        def _make(cls, iterable, new=tuple.__new__):
-            result = new(cls, iterable)
-            if len(result) != len(cls._fields):
-                raise TypeError('Expected %s arguments, got %d' %
-                                (len(cls._fields), len(result)))
-            return result
+        def __new__(cls, values):
+            return tuple.__new__(cls, tuple(values))
 
         def __repr__(self):
             return 'DataRow(%s)' % ', '.join([unicode(item) for item in self])
