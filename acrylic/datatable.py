@@ -263,7 +263,6 @@ class DataTable(object):
     def __delitem__(self, key):
         del self.__data[key]
 
-    # TODO: support passing in multiple column headers
     def __getitem__(self, item):
         """
         Pass in a fieldname to retrieve a column:
@@ -342,7 +341,7 @@ class DataTable(object):
         may pass in as many groupfields as you'd like to group by.
 
         The other columns, to the right, are the results of aggregation
-        functions on the lists of TableRows captured for each unique group.
+        functions on the lists of DataRows captured for each unique group.
         These are passed in as keyword arguments.
 
         There are some built-in aggregation functions, such as:
@@ -465,7 +464,7 @@ class DataTable(object):
         """
         Returns the row at index `rownum`.
         ---
-        Note that the TableRow object returned that represents the data row
+        Note that the DataRow object returned that represents the data row
         is constructed on the fly and is a just a shallow copy of
         the underlying data that does not update dynamically.
         """

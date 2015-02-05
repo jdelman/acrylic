@@ -1,5 +1,4 @@
 # coding: utf-8
-from prettytable import PrettyTable
 
 import ExcelRW
 
@@ -18,10 +17,3 @@ def excel(path, datatables, sheetnames=None):
         writer.writeheaders()
         writer.writerows(datatable)
     writer.save()
-
-
-def pretty_table(datatable):
-    pt = PrettyTable(datatable.fields)
-    for row in datatable:
-        pt.add_row(row.values())
-    return pt.get_string()
