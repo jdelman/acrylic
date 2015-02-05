@@ -89,6 +89,10 @@ class DataTable(object):
             raise Exception("Unrecognized row type: %s" % type(first_row))
 
     @property
+    def __rowbuilder(self):
+        return datarow_constructor(self.fields)
+
+    @property
     def fields(self):
         """
         A shallow copy of the list of fields in the DataTable.
@@ -96,10 +100,6 @@ class DataTable(object):
         If you modify the DataTable, this list will not update.
         """
         return self.__data.keys()
-
-    @property
-    def __rowbuilder(self):
-        return datarow_constructor(self.fields)
 
     @fields.setter
     def fields(self, new_fieldnames):
@@ -116,22 +116,6 @@ class DataTable(object):
         for old_name, new_name in izip(self.fields, new_fieldnames):
             # use pop instead of `del` in case old_name == new_name
             self.__data[new_name] = self.__data.pop(old_name)
-
-    def rename(self, old_name, new_name):
-        """
-        Renames a specific field, and preserves the underlying order.
-        """
-        if old_name not in self:
-            raise Exception("DataTable does not have field `%s`" % old_name)
-
-        if old_name == new_name:
-            return
-
-        new_names = list(self.fields)
-        location = new_names.index(old_name)
-        del new_names[location]
-        new_names.insert(location, new_name)
-        self.fields = new_names
 
     @classmethod
     def fromcolumns(cls, fields, columns):
@@ -251,12 +235,6 @@ class DataTable(object):
                 return False
         return True
 
-    def __len__(self):
-        if not self.__data:
-            return 0
-        else:
-            return len(self.__data.viewvalues().__iter__().next())
-
     def __contains__(self, fieldname):
         return fieldname in self.__data.viewkeys()
 
@@ -289,6 +267,12 @@ class DataTable(object):
             raise KeyError("DataTable does not support indexing with `%s`" %
                            type(item))
 
+    def __len__(self):
+        if not self.__data:
+            return 0
+        else:
+            return len(self.__data.viewvalues().__iter__().next())
+
     # TODO: set with slice?
     def __setitem__(self, fieldname, column):
         """
@@ -310,6 +294,20 @@ class DataTable(object):
             accumulator += print_tab_separated(line.values()) + u"\n"
         return accumulator[:-1]
 
+    def append(self, row):
+        """
+
+        """
+        if isinstance(row, dict):
+            pass
+        elif isinstance(row, (list, tuple, GeneratorType)):
+            if isinstance(row, tuple) and hasattr(row, '_fields'):
+                pass
+            else:
+                pass
+        else:
+            raise Exception("Unable to append `%s` to DataTable." % type(row))
+
     def apply(self, func, *fields):
         """
         Applies the function, `func`, to every row in the DataTable.
@@ -327,6 +325,25 @@ class DataTable(object):
             else:
                 results.append(func(*[row[field] for field in fields]))
         return results
+
+    def concat(self, other_datatable):
+        """
+
+        ---
+
+        """
+        if set(self.fields) != set(other_datatable.fields):
+            raise Exception("Columns do not match. ")
+
+
+
+    def col(self, colnum):
+        """
+        Returns the col at index `colnum`.
+        """
+        if colnum > len(self.fields):
+            raise IndexError("Invalid column index `%s` for DataTable" % colnum)
+        return self.__data[self.fields[colnum]]
 
     def distinct(self, fieldname, key=None):
         """
@@ -452,13 +469,21 @@ class DataTable(object):
             new_datatable[field] = list(compress(self[field], masklist))
         return new_datatable
 
-    def col(self, colnum):
+    def rename(self, old_name, new_name):
         """
-        Returns the col at index `colnum`.
+        Renames a specific field, and preserves the underlying order.
         """
-        if colnum > len(self.fields):
-            raise IndexError("Invalid column index `%s` for DataTable" % colnum)
-        return self.__data[self.fields[colnum]]
+        if old_name not in self:
+            raise Exception("DataTable does not have field `%s`" % old_name)
+
+        if old_name == new_name:
+            return
+
+        new_names = list(self.fields)
+        location = new_names.index(old_name)
+        del new_names[location]
+        new_names.insert(location, new_name)
+        self.fields = new_names
 
     def row(self, rownum):
         """
