@@ -15,11 +15,14 @@ class DataTable(object):
 
     def __init__(self, iterable=None):
         """
-        You must pass in either an iterable of either dictionaries,
-        where the keys will be counted as the headers ("fields"),
-        or lists, where the first list will be assumed to be the fields.
+        You must pass in an iterable of:
 
-        If your data doesn't have headers ("fields"),
+        1. dict, where the keys will be counted as the headers ("fields"),
+        2. list/tuple/generator, where the first will be assumed
+           to be the fields.
+        3. DataRow, from a previous DataTable.
+
+        If your list of lists data doesn't have headers ("fields"),
         make some and append them to the beginning of your list of lists.
 
         If your data is CSV, TSV, or similar format, you can even copy-paste
@@ -260,6 +263,7 @@ class DataTable(object):
     def __delitem__(self, key):
         del self.__data[key]
 
+    # TODO: support passing in multiple column headers
     def __getitem__(self, item):
         """
         Pass in a fieldname to retrieve a column:
@@ -274,6 +278,8 @@ class DataTable(object):
             for field in self.fields:
                 sliced_table[field] = self.__data[field][start:stop:step]
             return sliced_table
+        elif isinstance(item, (list, tuple)):
+            return [self.__getitem__(colname) for colname in item]
         elif isinstance(item, basestring):
             if item not in self:
                 raise KeyError("DataTable does not have column `%s`" % item)
@@ -284,6 +290,7 @@ class DataTable(object):
             raise KeyError("DataTable does not support indexing with `%s`" %
                            type(item))
 
+    # TODO: set with slice?
     def __setitem__(self, fieldname, column):
         """
         dt['new_column'] = [1, 2, 3]

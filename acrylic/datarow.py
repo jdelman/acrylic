@@ -17,6 +17,7 @@ def datarow_constructor(fields):
         def __repr__(self):
             return 'DataRow(%s)' % ', '.join([unicode(item) for item in self])
 
+        # TODO: should lists and slicing be supported?
         def __getitem__(self, item):
             if isinstance(item, (str, unicode)):
                 index = self._fields.index(item)
