@@ -44,7 +44,9 @@ class DataTable(object):
 
         # also identifies OrderedDict
         if isinstance(first_row, dict):
-            for field in first_row.keys():
+            fields = first_row.keys()
+            validate_fields(fields)
+            for field in fields:
                 self.__data[field] = [first_row[field]]
             for i, item in enumerate(iterator, 1):
                 for field in self.fields:
@@ -65,12 +67,15 @@ class DataTable(object):
             # not be headers, but we must access `._fields` to get
             # the header information. from then on, they should be the same.
             if isinstance(first_row, tuple) and hasattr(first_row, '_fields'):
-                fieldnames = first_row._fields
-                for fieldname, value in izip(fieldnames, first_row):
-                    self.__data[fieldname] = [value]
+                fields = first_row._fields
+                validate_fields(fields)
+                for field, value in izip(fields, first_row):
+                    self.__data[field] = [value]
             else:
-                for fieldname in first_row:
-                    self.__data[fieldname] = []
+                fields = first_row
+                validate_fields(fields)
+                for field in fields:
+                    self.__data[field] = []
             for i, item in enumerate(iterator):
                 if not isinstance(item, (list, tuple, GeneratorType)):
                     raise TypeError("Although the first row of your data "
@@ -289,14 +294,19 @@ class DataTable(object):
             accumulator += print_tab_separated(line.values()) + u"\n"
         return accumulator[:-1]
 
-    # TODO: docstring
     def append(self, row):
         """
         Takes a dict, a list/tuple/generator, or a DataRow/namedtuple,
         and appends it to the "bottom" or "end" of the DataTable.
 
         dicts must share the same keys as the DataTable's columns.
-        lists/tuples/generators
+
+        lists/tuples/generators are simply trusted to be in the correct order
+        and of the correct type (if relevant).
+
+        DataRows and namedtuples' `_fields` protected class attribute is
+        checked for the field names. Those are checked against the DataTable
+        and then appended to the relevant columns using those field names.
         """
         if isinstance(row, dict):
             if not set(row.keys()) == set(self.fields):
@@ -325,8 +335,8 @@ class DataTable(object):
                                     "correct length. It should have a length "
                                     "of %s, but is %s." % (len(self.fields),
                                                            len(row)))
-                # we're just going to hope that the list provided is
-                # in the right order, and of the right types.
+                # we're just going to hope that the list's contents are
+                # provided in the right order, and of the right type.
                 for (_, column), element in izip(self.__data.items(), row):
                     column.append(element)
         else:
@@ -679,6 +689,11 @@ def parse_column(column):
 def print_tab_separated(row):
     template = ("%s\t" * len(row))[:-1]
     return template % tuple(row)
+
+
+def validate_fields(fields):
+    if not all([isinstance(field, basestring) for field in fields]):
+        raise Exception("Column headers/fields must be strings.")
 
 
 def unique_everseen(iterable, key=None):
