@@ -1,5 +1,6 @@
 # coding: utf-8
 from __future__ import division, print_function
+from array import array
 from collections import OrderedDict
 from datarow import datarow_constructor
 from itertools import compress, ifilterfalse, izip
@@ -208,8 +209,7 @@ class DataTable(object):
 
     @classmethod
     def fromxls(cls, path, sheet_name_or_num=0):
-        reader = ExcelRW.UnicodeDictReader(path,
-                                           sheet_name_or_num=sheet_name_or_num)
+        reader = ExcelRW.UnicodeDictReader(path, sheet_name_or_num)
         return cls(reader)
 
     def __eq__(self, other):
@@ -273,7 +273,7 @@ class DataTable(object):
         """
         dt['new_column'] = [1, 2, 3]
         """
-        if not isinstance(column, list):
+        if not isinstance(column, (list, array)):
             column = list(column)
         if self.__data and len(column) != len(self):
             raise Exception("New column length (%s) must match length "
@@ -289,9 +289,14 @@ class DataTable(object):
             accumulator += print_tab_separated(line.values()) + u"\n"
         return accumulator[:-1]
 
+    # TODO: docstring
     def append(self, row):
         """
+        Takes a dict, a list/tuple/generator, or a DataRow/namedtuple,
+        and appends it to the "bottom" or "end" of the DataTable.
 
+        dicts must share the same keys as the DataTable's columns.
+        lists/tuples/generators
         """
         if isinstance(row, dict):
             if not set(row.keys()) == set(self.fields):
@@ -299,13 +304,31 @@ class DataTable(object):
                                 "all keys matching (order being irrelevant).\n"
                                 "dict: %s\nDataTable: %s" % (row.keys(),
                                                              self.fields))
+            for field in self.fields:
+                self.__data[field].append(row[field])
         elif isinstance(row, (list, tuple, GeneratorType)):
             if isinstance(row, tuple) and hasattr(row, '_fields'):
                 fieldnames = row._fields
-                for fieldname, value in izip(fieldnames, first_row):
-                    self.__data[fieldname] = [value]
+                if not set(fieldnames) == set(self.fields):
+                    raise Exception("Cannot append a Datarow or namedtuple to "
+                                    "DataTable without all fields matching "
+                                    "(order being irrelevant).\n"
+                                    "DataRow/namedtuple: %s\n"
+                                    "DataTable: %s" % (fieldnames, self.fields))
+                for fieldname, value in izip(fieldnames, row):
+                    self.__data[fieldname].append(value)
             else:
-                pass
+                if isinstance(row, GeneratorType):
+                    row = tuple(row)
+                if not len(row) == len(self.fields):
+                    raise Exception("The row being appended does not have the "
+                                    "correct length. It should have a length "
+                                    "of %s, but is %s." % (len(self.fields),
+                                                           len(row)))
+                # we're just going to hope that the list provided is
+                # in the right order, and of the right types.
+                for (_, column), element in izip(self.__data.items(), row):
+                    column.append(element)
         else:
             raise Exception("Unable to append `%s` to DataTable" % type(row))
 
@@ -314,7 +337,7 @@ class DataTable(object):
         Applies the function, `func`, to every row in the DataTable.
 
         If no fields are supplied, the entire row is passed to `func`.
-        If fieldds are supplied, the values at all of those fields
+        If fields are supplied, the values at all of those fields
         are passed into func in that order.
         ---
         data['diff'] = data.apply(short_diff, 'old_count', 'new_count')
@@ -327,16 +350,26 @@ class DataTable(object):
                 results.append(func(*[row[field] for field in fields]))
         return results
 
-    def concat(self, other_datatable):
+    def concat(self, other_datatable, inplace=False):
         """
-
-        ---
-
+        Concatenates two DataTables together, as long as column names
+        are identical (ignoring order). The resulting DataTable's columns
+        are in the order of the table whose `concat` method was called.
         """
+        if not isinstance(other_datatable, DataTable):
+            raise TypeError("`concat` requires a DataTable, not a %s" %
+                            type(other_datatable))
         if set(self.fields) != set(other_datatable.fields):
             raise Exception("Columns do not match:\nself: %s\nother: %s" %
                             (self.fields, other_datatable.fields))
-        pass
+
+        target_table = self if inplace else DataTable()
+
+        for field in self.fields:
+
+            target_table[field] = self[field] + other_datatable[field]
+
+        return target_table
 
     def col(self, colnum):
         """
@@ -350,7 +383,7 @@ class DataTable(object):
         """
         Returns the unique values seen at `fieldname`.
         """
-        return list(unique_everseen(self[fieldname], key=key))
+        return tuple(unique_everseen(self[fieldname], key=key))
 
     def groupby(self, *groupfields, **aggregators):
         """
@@ -460,7 +493,7 @@ class DataTable(object):
         (or equivalent) in the mask.
         """
         if not hasattr(masklist, '__len__'):
-            masklist = list(masklist)
+            masklist = tuple(masklist)
 
         if len(masklist) != len(self):
             raise Exception("Masklist length must match length of DataTable")
@@ -508,17 +541,14 @@ class DataTable(object):
         mutate the original table. Either way, a reference to the relevant
         table will be returned.
         """
-        field_index = list(self.fields).index(fieldname)
+        field_index = tuple(self.fields).index(fieldname)
 
         data_cols = izip(*sorted(izip(*[self.__data[field]
                                         for field in self.fields]),
                                  key=lambda row: key(row[field_index]),
                                  reverse=desc))
 
-        if inplace:
-            target_table = self
-        else:
-            target_table = DataTable()
+        target_table = self if inplace else DataTable()
 
         for field, data_col in izip(self.fields, data_cols):
             target_table[field] = list(data_col)

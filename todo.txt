@@ -26,10 +26,6 @@
 . data[0][2]  # row, column
 . data[0][24]  # NOT SUPPORTED
 
-# CONCATENATION/APPEND
-
-. Concatenation operation.
-
 # JOIN
 
 . Join operation: consider Pandas syntax, but simplify if possible.
@@ -109,13 +105,13 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 # TESTING AND PROFILING
 
 . prepare method to do memory profiling for each commit to master
+. reach 90%+ coverage with all new tests
 
 # FUTURE
 
 . Python 3 support
 
-
-
+# SCRAP
 
 if __name__ == '__main__':
     excel_reader = ExcelRW.UnicodeDictReader('./tests/testdata.xlsx')
