@@ -43,7 +43,7 @@ class DataTable(object):
 
         # also identifies OrderedDict
         if isinstance(first_row, dict):
-            for field in self.fields:
+            for field in first_row.keys():
                 self.__data[field] = [first_row[field]]
             for i, item in enumerate(iterator, 1):
                 for field in self.fields:
@@ -87,10 +87,6 @@ class DataTable(object):
                     self.__data[field].append(value)
         else:
             raise Exception("Unrecognized row type: %s" % type(first_row))
-
-    @property
-    def __rowbuilder(self):
-        return datarow_constructor(self.fields)
 
     @property
     def fields(self):
@@ -500,7 +496,8 @@ class DataTable(object):
         """
         if rownum > len(self):
             raise IndexError("Invalid row index `%s` for DataTable" % rownum)
-        return self.__rowbuilder([self[field][rownum] for field in self.fields])
+        return datarow_constructor(self.fields)([self[field][rownum]
+                                                 for field in self.fields])
 
     def sort(self, fieldname, key=lambda x: x, desc=False, inplace=False):
         """
@@ -593,8 +590,9 @@ class DataTable(object):
         writer.save()
 
     def __iter__(self):
+        datarow = datarow_constructor(self.fields)
         for values in izip(*[self.__data[field] for field in self.fields]):
-            yield self.__rowbuilder(values)
+            yield datarow(values)
 
 
 def aggregator_factory(fieldname, func, funcname):

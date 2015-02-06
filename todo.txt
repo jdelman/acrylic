@@ -1,49 +1,118 @@
-# Great looking console printing.
-# Matplotlib/IPython printing integration?
+# PRINTING
 
-# Independent ImmutableOrderedDict implementation.
+. Great looking console printing.
+. Matplotlib/IPython printing integration?
 
-# `print table` prints a prettytable, but
-# `print table.t` prints a tab-separated table for easy pasting
-# `print table.html` prints an html representation for IPython (?)
+. `print table` prints a prettytable, but
+. `print table.t` prints a tab-separated table for easy pasting
+. `print table.html` prints an html representation for IPython (?)
 
-# Groupby should show the groups in the "pivot table" style
-# as shown here:
-# http://bconnelly.net/2013/10/summarizing-data-in-python-with-pandas/
-# This can be done with a TableGroupBy object which knows
-# the columns that were used for a grouping, and knows which columns
-# come from aggregation functions, and prints itself differently.
-# Otherwise, it could be the same as DataTable, but with some
-# flag tripped that changes printing. Or a subclass of DataTable.
+# GROUPBY
 
-# Concatenation operation.
-# Join operation: consider Pandas syntax, but simplify if possible.
+. Groupby should show the groups in the "pivot table" style
+. as shown here:
+. http://bconnelly.net/2013/10/summarizing-data-in-python-with-pandas/
+. This can be done with a TableGroupBy object which knows
+. the columns that were used for a grouping, and knows which columns
+. come from aggregation functions, and prints itself differently.
+. Otherwise, it could be the same as DataTable, but with some
+. flag tripped that changes printing. Or a subclass of DataTable.
 
-# Should better typing/numpy support be added?
+# MUTABILITY
 
-# Documentation Items
+. enforce column headers must be strings
+. data['column'][0]
+. data[0]['column']
+. data[0][2]  # row, column
+. data[0][24]  # NOT SUPPORTED
 
+# CONCATENATION/APPEND
+
+. Concatenation operation.
+
+# JOIN
+
+. Join operation: consider Pandas syntax, but simplify if possible.
+
+# MEMORY OPTIMIZATION
+
+. https://docs.python.org/3/library/array.html
+. Can we beat this?
+
+C:\git\acrylic\acrylic>python -m memory_profiler memory.py
+Filename: memory.py
+
+Line #    Mem usage    Increment   Line Contents
+================================================
+    11  173.082 MiB    0.000 MiB       rands = (random() for _ in xrange(len(data)))
+
+
+Filename: memory.py
+
+Line #    Mem usage    Increment   Line Contents
+================================================
+     8   17.508 MiB    0.000 MiB   @profile
+     9                             def main():
+    10  149.688 MiB  132.180 MiB       data = DataTable.fromcsv('Audience 25-34 USA Handles and IDs.csv', delimiter="\t")
+    11  173.082 MiB   23.395 MiB       rands = (random() for _ in xrange(len(data)))
+    12  149.688 MiB  -23.395 MiB       data.fields = [unicode(field) for field in data.fields]
+    13                                 data[u'rand'] = rands
+    14  173.082 MiB   23.395 MiB       rands2 = []
+    15  181.344 MiB    8.262 MiB       for row in data:
+    16  181.344 MiB    0.000 MiB           item = row[u'rand']
+    17  181.344 MiB    0.000 MiB           rands2.append(item)
+    18  250.879 MiB   69.535 MiB       datatup = tuple([i for i in data])
+    19  250.883 MiB    0.004 MiB       s = sample(datatup, 100)
+    20  250.883 MiB    0.000 MiB       s = list(s)
+    21  250.883 MiB    0.000 MiB       del s
+    22  232.562 MiB  -18.320 MiB       del data
+
+. Consider `array` module or `ctypes` modules
+
+# SPEED OPTIMIZATION
+
+C:\git\acrylic\acrylic>kernprof -l -v memory.py
+Wrote profile results to memory.py.lprof
+Timer unit: 2.56146e-07 s
+
+Total time: 31.0867 s
+File: memory.py
+Function: main at line 8
+
+Line #      Hits         Time  Per Hit   % Time  Line Contents
+==============================================================
+     8                                           @profile
+     9                                           def main():
+    10         1    102577787 102577787.0     84.5      data = DataTable.fromcsv('Audience 25-34 USA Handles and IDs.csv', delimiter="\t")
+    11         1           65     65.0      0.0      rands = (random() for _ in xrange(len(data)))
+    12         3           96     32.0      0.0      data.fields = [unicode(field) for field in data.fields]
+    13         1       670186 670186.0      0.6      data[u'rand'] = rands
+    14         1            8      8.0      0.0      rands2 = []
+    15    798457      4274496      5.4      3.5      for row in data:
+    16    798456      5918435      7.4      4.9          item = row[u'rand']
+    17    798456      1574543      2.0      1.3          rands2.append(item)
+    18    798457      6279730      7.9      5.2      datatup = tuple([i for i in data])
+    19         1          998    998.0      0.0      s = sample(datatup, 100)
+    20         1           12     12.0      0.0      s = list(s)
+    21         1            4      4.0      0.0      del s
+    22         1        66773  66773.0      0.1      del data
+
+. Should better typing/numpy support be added?
+
+# DOCUMENTATION
+
+. Editing with http://markable.in/editor/
 . Casting can be done with .apply easily
-. distinct, row
+. distinct, row, col, append, concat
 . column headers need to be strings
 
-Acrylic
-    consider slots for datarow
-        __slots__ = ['id', 'caption', 'url']
-    replace datarows with an on-the-fly defined namedtuple constructor
-        - https://docs.python.org/2/library/collections.html#collections.namedtuple
-        - or consider flyweight design pattern (http://yloiseau.net/articles/DesignPatterns/flyweight/)
-    consider ctypes as a list substitute in certain conditions
-    do memory profiling on a test data set for each commit
+# TESTING AND PROFILING
 
-data['column'][0]
-data[0]['column']
-data[0][2]  # row, column
-data[0][24]  # NOT SUPPORTED
+. prepare method to do memory profiling for each commit to master
 
+# FUTURE
 
-document that fieldnames can be unicode but it's a pain
-python 3 support
+. Python 3 support
 
 
 
