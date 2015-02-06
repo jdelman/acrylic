@@ -50,8 +50,8 @@ class UnicodeReader(object):
             # When the line has a delimiter or the quotechar,
             # it means it has been surrounded by quotechars,
             # so the \x85 won't break it.
-            if self.reader.dialect.delimiter in temp_row_ending \
-            or self.reader.dialect.quotechar in temp_row_ending:
+            if (self.reader.dialect.delimiter in temp_row_ending
+               or self.reader.dialect.quotechar in temp_row_ending):
                 break
 
             # Sometimes the \x85 was at the end of the line anyway.

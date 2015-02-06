@@ -1,5 +1,7 @@
 # coding: utf-8
 
+from itertools import izip
+
 
 def datarow_constructor(fields):
 
@@ -34,6 +36,6 @@ def datarow_constructor(fields):
                 raise Exception("Unrecognized index type: %s" % type(item))
 
         def items(self):
-            return zip(self._fields, self)
+            return izip(self._fields, self)
 
     return DataRow

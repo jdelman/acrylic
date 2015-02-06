@@ -18,14 +18,6 @@
 . Otherwise, it could be the same as DataTable, but with some
 . flag tripped that changes printing. Or a subclass of DataTable.
 
-# MUTABILITY
-
-. enforce column headers must be strings
-. data['column'][0]
-. data[0]['column']
-. data[0][2]  # row, column
-. data[0][24]  # NOT SUPPORTED
-
 # JOIN
 
 . Join operation: consider Pandas syntax, but simplify if possible.
@@ -97,10 +89,9 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 
 # DOCUMENTATION
 
-. Editing with http://markable.in/editor/
+. Editing with `grip`
 . Casting can be done with .apply easily
-. distinct, row, col, append, concat
-. column headers need to be strings
+. append, concat
 
 # TESTING AND PROFILING
 

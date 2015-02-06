@@ -106,14 +106,12 @@ class DataTable(object):
     @fields.setter
     def fields(self, new_fieldnames):
         """
-        Overwrite all fields with new fields.
+        Overwrite all field names with new field names. Mass renaming.
         """
         if len(new_fieldnames) != len(self.fields):
             raise Exception("Cannot replace fieldnames (len: %s) with list of "
                             "incorrect length (len: %s)" % (len(new_fieldnames),
                                                             len(self.fields)))
-        # We cast self.fields to a list so we don't iterate forever while
-        # we mutate it.
         for old_name, new_name in izip(self.fields, new_fieldnames):
             # use pop instead of `del` in case old_name == new_name
             self.__data[new_name] = self.__data.pop(old_name)
@@ -131,9 +129,12 @@ class DataTable(object):
 
     @classmethod
     def fromcsv(cls, path, delimiter=","):
-        reader = UnicodeRW.UnicodeDictReader(open(path, 'r'),
+        f = open(path, 'r')
+        reader = UnicodeRW.UnicodeDictReader(f,
                                              delimiter=delimiter)
-        return cls(reader)
+        new_table = cls(reader)
+        f.close()
+        return new_table
 
     @classmethod
     def fromcsvstring(cls, csvstring, delimiter=",", quotechar="\""):
@@ -208,8 +209,8 @@ class DataTable(object):
         will be preserved.
         """
         new_datatable = cls()
-        for field in datadict.keys():
-            new_datatable[field] = datadict[field]
+        for field, column in datadict.items():
+            new_datatable[field] = column
         return new_datatable
 
     @classmethod
@@ -285,13 +286,16 @@ class DataTable(object):
                             "of table (%s)" % (len(column), len(self)))
         self.__data[fieldname] = column
 
+    def __repr__(self):
+        return str(self)
+
     def __str__(self):
         return unicode(self).encode('utf-8')
 
     def __unicode__(self):
         accumulator = print_tab_separated(self.fields) + u"\n"
-        for line in self:
-            accumulator += print_tab_separated(line.values()) + u"\n"
+        for datarow in self:
+            accumulator += print_tab_separated(datarow) + u"\n"
         return accumulator[:-1]
 
     def append(self, row):
@@ -381,13 +385,17 @@ class DataTable(object):
 
         return target_table
 
-    def col(self, colnum):
+    def col(self, col_name_or_num):
         """
-        Returns the col at index `colnum`.
+        Returns the col at index `colnum` or name `colnum`.
         """
-        if colnum > len(self.fields):
-            raise IndexError("Invalid column index `%s` for DataTable" % colnum)
-        return self.__data[self.fields[colnum]]
+        if isinstance(col_name_or_num, basestring):
+            return self[col_name_or_num]
+        elif isinstance(col_name_or_num, (int, long)):
+            if col_name_or_num > len(self.fields):
+                raise IndexError("Invalid column index `%s` for DataTable" %
+                                 col_name_or_num)
+            return self.__data[self.fields[col_name_or_num]]
 
     def distinct(self, fieldname, key=None):
         """
@@ -520,14 +528,34 @@ class DataTable(object):
         if old_name not in self:
             raise Exception("DataTable does not have field `%s`" % old_name)
 
+        if not isinstance(new_name, basestring):
+            raise ValueError("DataTable fields must be strings, not `%s`" %
+                             type(new_name))
+
         if old_name == new_name:
             return
 
-        new_names = list(self.fields)
+        new_names = self.fields
         location = new_names.index(old_name)
         del new_names[location]
         new_names.insert(location, new_name)
         self.fields = new_names
+
+    def reorder(self, fields_in_new_order):
+        """
+        Pass in field names in the order you wish them to be swapped.
+        """
+        if not len(fields_in_new_order) == len(self.fields):
+            raise Exception("Fields to reorder with are not the same length "
+                            "(%s) as the original fields (%s)." %
+                            (len(fields_in_new_order), len(self.fields)))
+        if not set(fields_in_new_order) == set(self.fields):
+            raise Exception("Fields to reorder with should be the same "
+                            "as the original fields.")
+        new = OrderedDict()
+        for field in fields_in_new_order:
+            new[field] = self.__data[field]
+        self.__data = new
 
     def row(self, rownum):
         """
