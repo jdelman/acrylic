@@ -1,0 +1,65 @@
+# Great looking console printing.
+# Matplotlib/IPython printing integration?
+
+# Independent ImmutableOrderedDict implementation.
+
+# `print table` prints a prettytable, but
+# `print table.t` prints a tab-separated table for easy pasting
+# `print table.html` prints an html representation for IPython (?)
+
+# Groupby should show the groups in the "pivot table" style
+# as shown here:
+# http://bconnelly.net/2013/10/summarizing-data-in-python-with-pandas/
+# This can be done with a TableGroupBy object which knows
+# the columns that were used for a grouping, and knows which columns
+# come from aggregation functions, and prints itself differently.
+# Otherwise, it could be the same as DataTable, but with some
+# flag tripped that changes printing. Or a subclass of DataTable.
+
+# Concatenation operation.
+# Join operation: consider Pandas syntax, but simplify if possible.
+
+# Should better typing/numpy support be added?
+
+# Documentation Items
+
+. Casting can be done with .apply easily
+. distinct, row
+. column headers need to be strings
+
+Acrylic
+    consider slots for datarow
+        __slots__ = ['id', 'caption', 'url']
+    replace datarows with an on-the-fly defined namedtuple constructor
+        - https://docs.python.org/2/library/collections.html#collections.namedtuple
+        - or consider flyweight design pattern (http://yloiseau.net/articles/DesignPatterns/flyweight/)
+    consider ctypes as a list substitute in certain conditions
+    do memory profiling on a test data set for each commit
+
+data['column'][0]
+data[0]['column']
+data[0][2]  # row, column
+data[0][24]  # NOT SUPPORTED
+
+
+document that fieldnames can be unicode but it's a pain
+python 3 support
+
+
+
+
+if __name__ == '__main__':
+    excel_reader = ExcelRW.UnicodeDictReader('./tests/testdata.xlsx')
+    data = DataTable(excel_reader)
+
+    concat = lambda field: lambda rows: ",".join(r[field] for r in rows)
+    o = data.groupby('colors',
+                     group_concat=concat('apostle'),
+                     mean='randnum',
+                     min='randnum2',
+                     max='randnum2')
+    print(o)
+    print()
+    from utils import pretty_table
+
+    print(pretty_table(data))
