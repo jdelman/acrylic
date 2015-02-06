@@ -79,10 +79,10 @@ class DataTable(object):
                 if not hasattr(item, '__len__'):
                     item = tuple(item)
                 if len(self.fields) != len(item):
-                    raise Exception("Row %s's length does not match headers: "
-                                    "%s vs %s" % (i,
-                                                  len(self.fields),
-                                                  len(item)))
+                    raise Exception("Row %s's length (%s) does not match "
+                                    "headers' length (%s)" % (i,
+                                                              len(self.fields),
+                                                              len(item)))
                 for field, value in izip(self.fields, item):
                     self.__data[field].append(value)
         else:
@@ -107,10 +107,9 @@ class DataTable(object):
         Overwrite all fields with new fields.
         """
         if len(new_fieldnames) != len(self.fields):
-            raise Exception("Cannot replace fieldnames with list of "
-                            "incorrect length: "
-                            "%s vs %s" % (len(new_fieldnames),
-                                          len(self.fields)))
+            raise Exception("Cannot replace fieldnames (len: %s) with list of "
+                            "incorrect length (len: %s)" % (len(new_fieldnames),
+                                                            len(self.fields)))
         # We cast self.fields to a list so we don't iterate forever while
         # we mutate it.
         for old_name, new_name in izip(self.fields, new_fieldnames):
@@ -120,9 +119,9 @@ class DataTable(object):
     @classmethod
     def fromcolumns(cls, fields, columns):
         if len(fields) != len(columns):
-            raise Exception("When constructing .fromcolumns, the number "
-                            "of fields must equal the number of columns: "
-                            "%s vs %s" % (len(fields), len(columns)))
+            raise Exception("When constructing .fromcolumns, the number of "
+                            "fields (%s) must equal the number of columns (%s)"
+                            % (len(fields), len(columns)))
         new_table = cls()
         for field, column in izip(fields, columns):
             new_table[field] = column
@@ -281,8 +280,8 @@ class DataTable(object):
         if not isinstance(column, list):
             column = list(column)
         if self.__data and len(column) != len(self):
-            raise Exception("New column length must match length "
-                            "of table: %s != %s" % (len(column), len(self)))
+            raise Exception("New column length (%s) must match length "
+                            "of table (%s)" % (len(column), len(self)))
         self.__data[fieldname] = column
 
     def __str__(self):
@@ -299,14 +298,20 @@ class DataTable(object):
 
         """
         if isinstance(row, dict):
-            pass
+            if not set(row.keys()) == set(self.fields):
+                raise Exception("Cannot append a dict to DataTable without "
+                                "all keys matching (order being irrelevant).\n"
+                                "dict: %s\nDataTable: %s" % (row.keys(),
+                                                             self.fields))
         elif isinstance(row, (list, tuple, GeneratorType)):
             if isinstance(row, tuple) and hasattr(row, '_fields'):
-                pass
+                fieldnames = row._fields
+                for fieldname, value in izip(fieldnames, first_row):
+                    self.__data[fieldname] = [value]
             else:
                 pass
         else:
-            raise Exception("Unable to append `%s` to DataTable." % type(row))
+            raise Exception("Unable to append `%s` to DataTable" % type(row))
 
     def apply(self, func, *fields):
         """
@@ -333,9 +338,9 @@ class DataTable(object):
 
         """
         if set(self.fields) != set(other_datatable.fields):
-            raise Exception("Columns do not match. ")
-
-
+            raise Exception("Columns do not match:\nself: %s\nother: %s" %
+                            (self.fields, other_datatable.fields))
+        pass
 
     def col(self, colnum):
         """
