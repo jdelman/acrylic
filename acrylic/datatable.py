@@ -3,7 +3,7 @@ from __future__ import division, print_function
 from array import array
 from collections import OrderedDict
 from datarow import datarow_constructor
-from itertools import compress, ifilterfalse, izip
+from itertools import chain, compress, ifilterfalse, izip
 from types import GeneratorType
 
 import csv
@@ -14,7 +14,7 @@ import UnicodeRW
 
 class DataTable(object):
 
-    def __init__(self, iterable=None):
+    def __init__(self, iterable=None, headers=None):
         """
         You must pass in an iterable of:
 
@@ -24,7 +24,7 @@ class DataTable(object):
         3. DataRow, from a previous DataTable.
 
         If your list of lists data doesn't have headers ("fields"),
-        make some and append them to the beginning of your list of lists.
+        make some and pass them into the `headers` parameter.
 
         If your data is CSV, TSV, or similar format, you can even copy-paste
         it the relevant script for on-the-fly DataTable construction. See
@@ -44,7 +44,10 @@ class DataTable(object):
 
         # also identifies OrderedDict
         if isinstance(first_row, dict):
-            fields = first_row.keys()
+            if not headers:
+                fields = first_row.keys()
+            else:
+                fields = headers
             validate_fields(fields)
             for field in fields:
                 self.__data[field] = [first_row[field]]
@@ -67,12 +70,19 @@ class DataTable(object):
             # not be headers, but we must access `._fields` to get
             # the header information. from then on, they should be the same.
             if isinstance(first_row, tuple) and hasattr(first_row, '_fields'):
-                fields = first_row._fields
+                if not headers:
+                    fields = first_row._fields
+                else:
+                    fields = headers
                 validate_fields(fields)
                 for field, value in izip(fields, first_row):
                     self.__data[field] = [value]
             else:
-                fields = first_row
+                if not headers:
+                    fields = first_row
+                else:
+                    fields = headers
+                    iterator = chain((first_row,), iterator)
                 validate_fields(fields)
                 for field in fields:
                     self.__data[field] = []
