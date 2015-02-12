@@ -5,6 +5,10 @@
 A DataTable can always be constructed from a list of dictionaries,
 where the keys are the column names, or a list of lists,
 where the first list contains the column names.
+
+If the first list doesn't contain the column names, you can pass in a
+`headers=` argument to the constructor.
+
 If you use `OrderedDict` instead of a standard dictionary,
 column order will be preserved (and based off of the first row).
 Otherwise, the order will be lost - but you can always reorder columns later.
@@ -295,3 +299,5 @@ TODO
 TODO
 
 ## Future
+
+TODO

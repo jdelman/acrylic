@@ -3,6 +3,7 @@ from __future__ import division, print_function
 from array import array
 from collections import OrderedDict
 from datarow import datarow_constructor
+from groupby import GroupBy
 from itertools import chain, compress, ifilterfalse, izip
 from types import GeneratorType
 
@@ -413,105 +414,9 @@ class DataTable(object):
         """
         return tuple(unique_everseen(self[fieldname], key=key))
 
+    # TODO: docstring
     def groupby(self, *groupfields, **aggregators):
-        """
-        Groupby returns a new DataTable. The first column is the "groupkey",
-        which is the unique set of fields used to identify this group. You
-        may pass in as many groupfields as you'd like to group by.
-
-        The other columns, to the right, are the results of aggregation
-        functions on the lists of DataRows captured for each unique group.
-        These are passed in as keyword arguments.
-
-        There are some built-in aggregation functions, such as:
-
-        concat : concatenates string-like values, like ",".join
-        min, max, sum, mean : self explanatory effects on lists of numbers
-
-        These are called like:
-
-        data.groupby('colors', sum='randnum')
-
-        Multiple groups can be called like:
-
-        data.groupby('colors', 'apostle', min='randnum2', max='randnum2')
-
-        Custom aggregation functions can be added easily. Below is an example
-        that counts the length of the group list:
-
-        data.groupby('colors', agg=len)
-
-        A more complex example of a custom aggregation function might be:
-
-        aggfunc = lambda rows: ','.join(row['apostle'] for row in rows)
-        data.groupby('colors', agg=aggfunc))
-
-        Here's a cool recipe for a generalizeable concat:
-
-        concat = lambda field: lambda rows: ",".join(r[field] for r in rows)
-        data.groupby('colors', agg=concat('apostle'))
-
-        Consider taking into consideration this recipe taking advantage of
-        closures when writing your own custom groupby code.
-        """
-
-        # Checking groupfields.
-        if len(groupfields) == 1:
-            keyfunc = lambda r: r[groupfields[0]]
-        elif len(groupfields) == 0:
-            raise Exception("Must pass at least one field to group by")
-        elif len(groupfields) >= len(self.fields):
-            raise Exception("Can't groupby using more groupfields than "
-                            "the DataTable has fields")
-        else:
-            keyfunc = lambda r: tuple(r[groupfield]
-                                      for groupfield in groupfields)
-
-        builtin_aggs = {'concat': group_concat,
-                        'min': min_aggregation,
-                        'max': max_aggregation,
-                        'sum': sum_aggregation,
-                        'mean': mean_aggregation}
-
-        aggregation_functions = []
-        for argname, argvalue in aggregators.items():
-            if argname in builtin_aggs:
-                # We found the argname in the built-in aggregators,
-                # so the value must be the fieldname we want to aggregate.
-                aggregation_functions.append(builtin_aggs[argname](argvalue))
-            else:
-                if not callable(argvalue):
-                    raise Exception("Passed in an uncallable object: "
-                                    "%s, %s" % (argvalue, type(argvalue)))
-                # We try to assign the argname to the argvalue, which
-                # is probably a function. If it's a lambda or a regular
-                # function, this works. If it's a built-in, like len(),
-                # it will fail with an AttributeError - which is fine.
-                try:
-                    argvalue.__name__ = argname
-                except AttributeError:
-                    pass
-                aggregation_functions.append(argvalue)
-
-        groups = OrderedDict()
-        for row in self:
-            groupkey = keyfunc(row)
-            if groupkey not in groups:
-                groups[groupkey] = [row]
-            else:
-                groups[groupkey].append(row)
-
-        new_table = DataTable()
-        # TODO: fix this with a new groupby object
-        new_table[','.join(groupfields)] = [unicode(i) for i in groups.keys()]
-
-        if not aggregation_functions:
-            new_table['groups'] = groups.values()
-        else:
-            for aggfunc in aggregation_functions:
-                new_table[aggfunc.__name__] = [aggfunc(group)
-                                               for group in groups.values()]
-        return new_table
+        return GroupBy(self, groupfields, aggregators)
 
     def mask(self, masklist):
         """
@@ -671,35 +576,6 @@ class DataTable(object):
         datarow = datarow_constructor(self.fields)
         for values in izip(*[self.__data[field] for field in self.fields]):
             yield datarow(values)
-
-
-def aggregator_factory(fieldname, func, funcname):
-    def _aggregation_function(rows):
-        return func([row[fieldname] for row in rows])
-    _aggregation_function.__name__ = funcname % fieldname
-    return _aggregation_function
-
-
-def group_concat(fieldname):
-    func = lambda strings: ",".join(strings)
-    return aggregator_factory(fieldname, func, 'group_concat(%s)')
-
-
-def max_aggregation(fieldname):
-    return aggregator_factory(fieldname, max, 'max(%s)')
-
-
-def min_aggregation(fieldname):
-    return aggregator_factory(fieldname, min, 'min(%s)')
-
-
-def sum_aggregation(fieldname):
-    return aggregator_factory(fieldname, sum, 'sum(%s)')
-
-
-def mean_aggregation(fieldname):
-    mean = lambda nums: sum(nums)/len(nums)
-    return aggregator_factory(fieldname, mean, 'mean(%s)')
 
 
 def parse_column(column):

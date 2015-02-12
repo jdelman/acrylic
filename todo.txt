@@ -92,7 +92,6 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 . Editing with `grip`
 . Casting can be done with .apply easily
 . append, concat
-. headers arg for DataTable constructor
 
 # TESTING AND PROFILING
 
