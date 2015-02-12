@@ -80,13 +80,14 @@ class DataTable(object):
                     self.__data[field] = [value]
             else:
                 if not headers:
-                    fields = first_row
+                    fields = list(first_row)
                 else:
                     fields = headers
                     iterator = chain((first_row,), iterator)
                 validate_fields(fields)
                 for field in fields:
                     self.__data[field] = []
+
             for i, item in enumerate(iterator):
                 if not isinstance(item, (list, tuple, GeneratorType)):
                     raise TypeError("Although the first row of your data "
@@ -559,16 +560,16 @@ class DataTable(object):
         return self.where(fieldname, value, negate=True)
 
     def writecsv(self, path):
-        writer = UnicodeRW.UnicodeDictWriter(open(path, 'wb'), self.fields)
-        writer.writeheaders()
+        writer = UnicodeRW.UnicodeWriter(open(path, 'wb'), self.fields)
+        writer.writerow(self.fields)
         writer.writerows(self)
         writer.close()
 
     def writexls(self, path, sheetname="default"):
-        writer = ExcelRW.UnicodeDictWriter(path)
-        writer.set_active_sheet(sheetname, self.fields)
+        writer = ExcelRW.UnicodeWriter(path)
+        writer.set_active_sheet(sheetname)
 
-        writer.writeheaders()
+        writer.writerow(self.fields)
         writer.writerows(self)
         writer.save()
 
