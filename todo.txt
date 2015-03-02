@@ -6,6 +6,7 @@
 . `print table` prints a prettytable, but
 . `print table.t` prints a tab-separated table for easy pasting
 . `print table.html` prints an html representation for IPython (?)
+. `print table.jira` prints the JIRA representation of a table
 
 # GROUPBY
 
@@ -101,6 +102,9 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 # FUTURE
 
 . Python 3 support
+. Lazy evaluation/"smart scheduler" a-la Spark
+. Spark integration?
+. dt.to_sql()
 
 # SCRAP
 

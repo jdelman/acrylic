@@ -1,1 +1,2 @@
-__author__ = 'Lazz'
+class GroupBy(object):
+    pass

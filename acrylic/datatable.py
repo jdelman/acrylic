@@ -373,6 +373,11 @@ class DataTable(object):
             if not fields:
                 results.append(func(row))
             else:
+                if any(field not in self for field in fields):
+                    for field in fields:
+                        if field not in self:
+                            raise Exception("Column `%s` does not exist "
+                                            "in DataTable." % field)
                 results.append(func(*[row[field] for field in fields]))
         return results
 
