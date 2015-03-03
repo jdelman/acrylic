@@ -4,7 +4,8 @@ from random import random, sample
 
 @profile
 def main():
-    data = DataTable.fromcsv('Audience 25-34 USA Handles and IDs.csv', delimiter="\t")
+    data = DataTable.fromcsv('Audience 25-34 USA Handles and IDs.csv',
+                             delimiter="\t")
     rands = (random() for _ in xrange(len(data)))
     data.fields = [unicode(field) for field in data.fields]
     data[u'rand'] = rands

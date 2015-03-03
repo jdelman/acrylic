@@ -14,5 +14,5 @@ setup(
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 2.7',
     ],
-    install_requires=['xlrd', 'xlwt']
+    install_requires=['xlrd', 'xlwt', 'pyexcelerate', 'openpyxl']
 )

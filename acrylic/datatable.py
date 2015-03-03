@@ -571,12 +571,9 @@ class DataTable(object):
         writer.close()
 
     def writexls(self, path, sheetname="default"):
-        writer = ExcelRW.UnicodeWriter(path)
-        writer.set_active_sheet(sheetname)
-
-        writer.writerow(self.fields)
-        writer.writerows(self)
-        writer.save()
+        wb = Workbook()
+        wb.new_sheet(sheetname, data=chain([self.fields], self))
+        wb.save(path)
 
     def __iter__(self):
         datarow = datarow_constructor(self.fields)
