@@ -140,11 +140,11 @@ class DataTable(object):
         return new_table
 
     @classmethod
-    def fromcsv(cls, path, delimiter=","):
+    def fromcsv(cls, path, delimiter=",", headers=None):
         f = open(path, 'r')
         reader = UnicodeRW.UnicodeDictReader(f,
                                              delimiter=delimiter)
-        new_table = cls(reader)
+        new_table = cls(reader, headers=headers)
         f.close()
         return new_table
 
@@ -226,9 +226,9 @@ class DataTable(object):
         return new_datatable
 
     @classmethod
-    def fromxls(cls, path, sheet_name_or_num=0):
+    def fromxls(cls, path, sheet_name_or_num=0, headers=None):
         reader = ExcelRW.UnicodeDictReader(path, sheet_name_or_num)
-        return cls(reader)
+        return cls(reader, headers=headers)
 
     def __eq__(self, other):
         """
@@ -304,11 +304,53 @@ class DataTable(object):
     def __str__(self):
         return unicode(self).encode('utf-8')
 
+    # TODO: replace with "pretty" console table.
     def __unicode__(self):
-        accumulator = print_tab_separated(self.fields) + u"\n"
+        return self.__print_table(u"\t")
+
+    def __print_table(self, row_delim, header_delim=None,
+                      header_pad="", pad=""):
+        """
+        row_delim         default delimiter inserted between columns of every
+                          row in the table.
+        header_delim      delimiter inserted within the headers. by default
+                          takes the value of `row_delim`
+        header_pad        put on the sides of the row of headers.
+        pad               put on the sides of every row.
+        """
+        if header_delim is None:
+            header_delim = row_delim
+        num_cols = len(self.fields)
+        accumulator = (("%s" + header_delim) * num_cols)[:-1] + u"\n"
+        accumulator = ((header_pad + accumulator + header_pad) %
+                       tuple(self.fields))
         for datarow in self:
-            accumulator += print_tab_separated(datarow) + u"\n"
+            rowstring = (("%s" + row_delim) * num_cols)[:-1] + u"\n"
+            rowstring = (pad + rowstring + pad) % tuple(datarow)
+            accumulator += rowstring
         return accumulator[:-1]
+
+    @property
+    def html(self):
+        accumulator = u"<table>"
+        accumulator += u"<tr>" + u"".join([u"<th>"+field+u"</th>"
+                                           for field in self.fields]) + u"</tr>"
+        for datarow in self:
+            accumulator += u"<tr>" + u"".join([u"<td>"+unicode(row)+u"</td>"
+                                               for row in datarow]) + u"</tr>"
+        return accumulator + u"</table>"
+
+    @property
+    def jira(self):
+        header, row = u"||", u"|"
+        return self.__print_table(row_delim=row,
+                                  header_delim=header,
+                                  header_pad=header,
+                                  pad=row)
+
+    @property
+    def t(self):
+        return self.__print_table(u"\t")
 
     def append(self, row):
         """
@@ -604,11 +646,6 @@ def parse_column(column):
             return float_attempt
         else:
             return int_attempt
-
-
-def print_tab_separated(row):
-    template = ("%s\t" * len(row))[:-1]
-    return template % tuple(row)
 
 
 def validate_fields(fields):

@@ -3,10 +3,7 @@
 . Great looking console printing.
 . Matplotlib/IPython printing integration?
 
-. `print table` prints a prettytable, but
-. `print table.t` prints a tab-separated table for easy pasting
-. `print table.html` prints an html representation for IPython (?)
-. `print table.jira` prints the JIRA representation of a table
+. `print table` prints a prettytable
 
 # GROUPBY
 
@@ -90,9 +87,12 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 
 # DOCUMENTATION
 
-. Editing with `grip`
+. Editing with `grip`  # TODO: what does `grip` mean?
 . Casting can be done with .apply easily
 . append, concat
+. `print table.t` prints a tab-separated table for easy pasting
+. `print table.html` prints an html representation for IPython (?)
+. `print table.jira` prints the JIRA representation of a table
 
 # TESTING AND PROFILING
 
