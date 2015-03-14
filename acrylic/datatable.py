@@ -287,6 +287,7 @@ class DataTable(object):
             return len(self.__data.viewvalues().__iter__().next())
 
     # TODO: set with slice?
+    # TODO: auto-expand scalars?
     def __setitem__(self, fieldname, column):
         """
         dt['new_column'] = [1, 2, 3]
@@ -432,6 +433,16 @@ class DataTable(object):
         if not isinstance(other_datatable, DataTable):
             raise TypeError("`concat` requires a DataTable, not a %s" %
                             type(other_datatable))
+        if not self.fields:
+            if inplace:
+                for field in other_datatable.fields:
+                    self[field] = other_datatable[field]
+                return self
+            else:
+                return other_datatable
+        if not other_datatable.fields:
+            return self
+
         if set(self.fields) != set(other_datatable.fields):
             raise Exception("Columns do not match:\nself: %s\nother: %s" %
                             (self.fields, other_datatable.fields))
