@@ -1,4 +1,4 @@
-# -*- coding: utf-8 -*-
+# coding: utf-8
 from collections import OrderedDict
 from nose.tools import (assert_equal,
                         assert_not_equal,

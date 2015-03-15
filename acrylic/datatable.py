@@ -227,6 +227,15 @@ class DataTable(object):
 
     @classmethod
     def fromxls(cls, path, sheet_name_or_num=0, headers=None):
+        """
+        Constructs a new DataTable from an Excel file.
+
+        Specify sheet_name_or_number to load that specific sheet.
+
+        Headers will be inferred automatically, but if you'd prefer
+        to load only a subset of all the headers, pass in a list of the
+        headers you'd like as `headers`.
+        """
         reader = ExcelRW.UnicodeDictReader(path, sheet_name_or_num)
         return cls(reader, headers=headers)
 
@@ -433,6 +442,9 @@ class DataTable(object):
         if not isinstance(other_datatable, DataTable):
             raise TypeError("`concat` requires a DataTable, not a %s" %
                             type(other_datatable))
+
+        # if the self table is empty, we can just return the other table
+        # if we need to do it in place, we just copy over the columns
         if not self.fields:
             if inplace:
                 for field in other_datatable.fields:
@@ -447,13 +459,15 @@ class DataTable(object):
             raise Exception("Columns do not match:\nself: %s\nother: %s" %
                             (self.fields, other_datatable.fields))
 
-        target_table = self if inplace else DataTable()
-
-        for field in self.fields:
-
-            target_table[field] = self[field] + other_datatable[field]
-
-        return target_table
+        if inplace:
+            for field in self.fields:
+                self.__data[field] = self[field] + other_datatable[field]
+            return self
+        else:
+            new_table = DataTable()
+            for field in self.fields:
+                new_table[field] = self[field] + other_datatable[field]
+            return new_table
 
     def col(self, col_name_or_num):
         """
@@ -626,7 +640,6 @@ class DataTable(object):
     def writexls(self, path, sheetname="default"):
         writer = ExcelRW.UnicodeWriter(path)
         writer.set_active_sheet(sheetname)
-
         writer.writerow(self.fields)
         writer.writerows(self)
         writer.save()
