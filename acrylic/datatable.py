@@ -319,7 +319,7 @@ class DataTable(object):
         return self.__print_table(u"\t")
 
     def __print_table(self, row_delim, header_delim=None,
-                      header_pad="", pad=""):
+                      header_pad=u"", pad=u""):
         """
         row_delim         default delimiter inserted between columns of every
                           row in the table.
@@ -331,12 +331,12 @@ class DataTable(object):
         if header_delim is None:
             header_delim = row_delim
         num_cols = len(self.fields)
-        accumulator = (("%s" + header_delim) * num_cols)[:-1] + u"\n"
-        accumulator = ((header_pad + accumulator + header_pad) %
+        accumulator = ((u"%s" + header_delim) * num_cols)[:-len(header_delim)]
+        accumulator = ((header_pad + accumulator + header_pad + u"\n") %
                        tuple(self.fields))
         for datarow in self:
-            rowstring = (("%s" + row_delim) * num_cols)[:-1] + u"\n"
-            rowstring = (pad + rowstring + pad) % tuple(datarow)
+            rowstring = ((u"%s" + row_delim) * num_cols)[:-len(row_delim)]
+            rowstring = (pad + rowstring + pad + u"\n") % tuple(datarow)
             accumulator += rowstring
         return accumulator[:-1]
 
