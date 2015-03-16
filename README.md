@@ -45,7 +45,7 @@ def fromdict(cls, datadict):
 ### Read data from Excel:
 
 ```python
-data = DataTable.fromxls('myfile.xls', sheet_name_or_number='default')
+data = DataTable.fromexcel('myfile.xls', sheet_name_or_number='default')
 ```
 
 ### Read data from CSV:
@@ -76,7 +76,7 @@ g,h,i''')
 ### Write data to Excel:
 
 ```python
-data.writexls('myoutput.xls')
+data.writexlsx('myoutput.xls')
 ```
 ### Write many DataTables to Excel:
 
@@ -180,10 +180,10 @@ for row in table:
 data['double_val'] = double_val
 ```
 
-Or, preferably, use `apply`. The first argument is a function (or callable).
+Or, better, use `apply`. The first argument is a function (or callable).
 You may specify which columns you want passed into the function with
 more arguments, as below. Otherwise, the entire `DataRow` is passed into the
-functiion as the only argument.
+function as the only argument.
 
 ```python
 data['double_val'] = data.apply(lambda x: x**2, 'val')
@@ -207,7 +207,8 @@ data = data.sort('diff', desc=True).sort('description').sort('searchterm')
 ```
 
 Sorting can be done in-place with the `inplace` argument. A reference to the 
-DataTable is returned just in case, but the original DataTable is mutated.
+(original, now mutated) DataTable is returned just in case, but the original 
+DataTable is mutated.
 
 ```python
 data.sort('randnum', inplace=True)
@@ -286,11 +287,11 @@ result = data.wherefunc(conditional_filter)
 You can also create a filtered DataTable by passing an iterable of `bool` to 
 the `mask` method.
 
-## Groupby
+## Join
 
 TODO
 
-## Join
+## Groupby
 
 TODO
 

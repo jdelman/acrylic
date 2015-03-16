@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 from setuptools import setup
 from os import path
 
@@ -14,5 +16,5 @@ setup(
         'Development Status :: 3 - Alpha',
         'Programming Language :: Python :: 2.7',
     ],
-    install_requires=['xlrd', 'xlwt', 'pyexcelerate', 'openpyxl']
+    install_requires=['openpyxl']
 )

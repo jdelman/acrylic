@@ -140,11 +140,11 @@ class DataTable(object):
         return new_table
 
     @classmethod
-    def fromcsv(cls, path, delimiter=","):
+    def fromcsv(cls, path, delimiter=",", headers=None):
         f = open(path, 'r')
         reader = UnicodeRW.UnicodeDictReader(f,
                                              delimiter=delimiter)
-        new_table = cls(reader)
+        new_table = cls(reader, headers=headers)
         f.close()
         return new_table
 
@@ -226,9 +226,18 @@ class DataTable(object):
         return new_datatable
 
     @classmethod
-    def fromxls(cls, path, sheet_name_or_num=0):
+    def fromexcel(cls, path, sheet_name_or_num=0, headers=None):
+        """
+        Constructs a new DataTable from an Excel file.
+
+        Specify sheet_name_or_number to load that specific sheet.
+
+        Headers will be inferred automatically, but if you'd prefer
+        to load only a subset of all the headers, pass in a list of the
+        headers you'd like as `headers`.
+        """
         reader = ExcelRW.UnicodeDictReader(path, sheet_name_or_num)
-        return cls(reader)
+        return cls(reader, headers=headers)
 
     def __eq__(self, other):
         """
@@ -287,6 +296,7 @@ class DataTable(object):
             return len(self.__data.viewvalues().__iter__().next())
 
     # TODO: set with slice?
+    # TODO: auto-expand scalars?
     def __setitem__(self, fieldname, column):
         """
         dt['new_column'] = [1, 2, 3]
@@ -304,11 +314,53 @@ class DataTable(object):
     def __str__(self):
         return unicode(self).encode('utf-8')
 
+    # TODO: replace with "pretty" console table.
     def __unicode__(self):
-        accumulator = print_tab_separated(self.fields) + u"\n"
+        return self.__print_table(u"\t")
+
+    def __print_table(self, row_delim, header_delim=None,
+                      header_pad=u"", pad=u""):
+        """
+        row_delim         default delimiter inserted between columns of every
+                          row in the table.
+        header_delim      delimiter inserted within the headers. by default
+                          takes the value of `row_delim`
+        header_pad        put on the sides of the row of headers.
+        pad               put on the sides of every row.
+        """
+        if header_delim is None:
+            header_delim = row_delim
+        num_cols = len(self.fields)
+        accumulator = ((u"%s" + header_delim) * num_cols)[:-len(header_delim)]
+        accumulator = ((header_pad + accumulator + header_pad + u"\n") %
+                       tuple(self.fields))
         for datarow in self:
-            accumulator += print_tab_separated(datarow) + u"\n"
+            rowstring = ((u"%s" + row_delim) * num_cols)[:-len(row_delim)]
+            rowstring = (pad + rowstring + pad + u"\n") % tuple(datarow)
+            accumulator += rowstring
         return accumulator[:-1]
+
+    @property
+    def html(self):
+        accumulator = u"<table>"
+        accumulator += u"<tr>" + u"".join([u"<th>"+field+u"</th>"
+                                           for field in self.fields]) + u"</tr>"
+        for datarow in self:
+            accumulator += u"<tr>" + u"".join([u"<td>"+unicode(row)+u"</td>"
+                                               for row in datarow]) + u"</tr>"
+        return accumulator + u"</table>"
+
+    @property
+    def jira(self):
+        header, row = u"||", u"|"
+        return self.__print_table(row_delim=row,
+                                  header_delim=header,
+                                  header_pad=header,
+                                  pad=row)
+
+    @property
+    def t(self):
+        return self.__print_table(u"\t")
 
     def append(self, row):
         """
@@ -381,27 +433,6 @@ class DataTable(object):
                 results.append(func(*[row[field] for field in fields]))
         return results
 
-    def concat(self, other_datatable, inplace=False):
-        """
-        Concatenates two DataTables together, as long as column names
-        are identical (ignoring order). The resulting DataTable's columns
-        are in the order of the table whose `concat` method was called.
-        """
-        if not isinstance(other_datatable, DataTable):
-            raise TypeError("`concat` requires a DataTable, not a %s" %
-                            type(other_datatable))
-        if set(self.fields) != set(other_datatable.fields):
-            raise Exception("Columns do not match:\nself: %s\nother: %s" %
-                            (self.fields, other_datatable.fields))
-
-        target_table = self if inplace else DataTable()
-
-        for field in self.fields:
-
-            target_table[field] = self[field] + other_datatable[field]
-
-        return target_table
-
     def col(self, col_name_or_num):
         """
         Returns the col at index `colnum` or name `colnum`.
@@ -414,6 +445,42 @@ class DataTable(object):
                                  col_name_or_num)
             return self.__data[self.fields[col_name_or_num]]
 
+    def concat(self, other_datatable, inplace=False):
+        """
+        Concatenates two DataTables together, as long as column names
+        are identical (ignoring order). The resulting DataTable's columns
+        are in the order of the table whose `concat` method was called.
+        """
+        if not isinstance(other_datatable, DataTable):
+            raise TypeError("`concat` requires a DataTable, not a %s" %
+                            type(other_datatable))
+
+        # if the self table is empty, we can just return the other table
+        # if we need to do it in place, we just copy over the columns
+        if not self.fields:
+            if inplace:
+                for field in other_datatable.fields:
+                    self[field] = other_datatable[field]
+                return self
+            else:
+                return other_datatable
+        if not other_datatable.fields:
+            return self
+
+        if set(self.fields) != set(other_datatable.fields):
+            raise Exception("Columns do not match:\nself: %s\nother: %s" %
+                            (self.fields, other_datatable.fields))
+
+        if inplace:
+            for field in self.fields:
+                self.__data[field] = self[field] + other_datatable[field]
+            return self
+        else:
+            new_table = DataTable()
+            for field in self.fields:
+                new_table[field] = self[field] + other_datatable[field]
+            return new_table
+
     def distinct(self, fieldname, key=None):
         """
         Returns the unique values seen at `fieldname`.
@@ -423,6 +490,9 @@ class DataTable(object):
     # TODO: docstring
     def groupby(self, *groupfields, **aggregators):
         return GroupBy(self, groupfields, aggregators)
+
+    def join(self):
+        pass
 
     def mask(self, masklist):
         """
@@ -570,10 +640,24 @@ class DataTable(object):
         writer.writerows(self)
         writer.close()
 
-    def writexls(self, path, sheetname="default"):
-        wb = Workbook()
-        wb.new_sheet(sheetname, data=chain([self.fields], self))
-        wb.save(path)
+    def writexlsx(self, path, sheetname="default"):
+        """
+        Writes this table to an .xlsx file at the specified `path`.
+
+        If you'd like to specify a sheetname, you may do so.
+
+        If you'd like to write one workbook with different DataTables
+        for each sheet, import the `excel` function from acrylic. You
+        can see that code in `utils.py`.
+
+        Note that the outgoing file is an .xlsx file, so it'd make sense to
+        name that way.
+        """
+        writer = ExcelRW.UnicodeWriter(path)
+        writer.set_active_sheet(sheetname)
+        writer.writerow(self.fields)
+        writer.writerows(self)
+        writer.save()
 
     def __iter__(self):
         datarow = datarow_constructor(self.fields)
@@ -601,11 +685,6 @@ def parse_column(column):
             return float_attempt
         else:
             return int_attempt
-
-
-def print_tab_separated(row):
-    template = ("%s\t" * len(row))[:-1]
-    return template % tuple(row)
 
 
 def validate_fields(fields):

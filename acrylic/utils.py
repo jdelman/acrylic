@@ -1,11 +1,10 @@
 # coding: utf-8
 
-from itertools import chain
-from pyexcelerate import Workbook
+from ExcelRW import UnicodeWriter
 
 
 def excel(path, datatables, sheetnames=None):
-    wb = Workbook()
+    writer = UnicodeWriter(path)
     if sheetnames is None:
         sheetnames = ["datatable_%02d" % i for i in range(1, len(datatables))]
     else:
@@ -14,5 +13,7 @@ def excel(path, datatables, sheetnames=None):
                             "length as `datatables`: %s vs %s" %
                             (len(sheetnames), len(datatables)))
     for datatable, sheetname in zip(datatables, sheetnames):
-        wb.new_sheet(sheetname, data=chain([datatable.fields], datatable))
-    wb.save(path)
+        writer.set_active_sheet(sheetname)
+        writer.writerow(datatable.fields)
+        writer.writerows(datatable)
+    writer.save()

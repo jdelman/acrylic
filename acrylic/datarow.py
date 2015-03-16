@@ -2,6 +2,20 @@
 
 from itertools import izip
 
+"""
+Abandon hope, all ye who enter here.
+
+This strange thing exists because it's the best way that I know of to
+create an object with:
+
+1. a dict-like mapping
+2. a set of keys specified at runtime
+3. a memory footprint much, much smaller than a dictionary
+
+This concept was borrowed from the Python standard library's `namedtuple`
+implementation.
+"""
+
 
 def datarow_constructor(fields):
 

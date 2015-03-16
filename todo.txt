@@ -2,11 +2,7 @@
 
 . Great looking console printing.
 . Matplotlib/IPython printing integration?
-
-. `print table` prints a prettytable, but
-. `print table.t` prints a tab-separated table for easy pasting
-. `print table.html` prints an html representation for IPython (?)
-. `print table.jira` prints the JIRA representation of a table
+. `print table` prints a prettytable
 
 # GROUPBY
 
@@ -90,21 +86,27 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 
 # DOCUMENTATION
 
-. Editing with `grip`
+. Editing with `grip`  # TODO: what does `grip` mean?
 . Casting can be done with .apply easily
 . append, concat
+. `print table.t` prints a tab-separated table for easy pasting
+. `print table.html` prints an html representation for IPython (?)
+. `print table.jira` prints the JIRA representation of a table
+. readthedocs
+. improve setup.py (take inspiration from openpyxl's)
 
 # TESTING AND PROFILING
 
 . prepare method to do memory profiling for each commit to master
 . reach 90%+ coverage with all new tests
+. test all openpyxl code
 
 # FUTURE
 
 . Python 3 support
 . Lazy evaluation/"smart scheduler" a-la Spark
-. Spark integration?
 . dt.to_sql()
+. better type inference
 
 # SCRAP
 
