@@ -226,7 +226,16 @@ class DataTable(object):
         return new_datatable
 
     @classmethod
-    def fromxls(cls, path, sheet_name_or_num=0, headers=None):
+    def fromexcel(cls, path, sheet_name_or_num=0, headers=None):
+        """
+        Constructs a new DataTable from an Excel file.
+
+        Specify sheet_name_or_number to load that specific sheet.
+
+        Headers will be inferred automatically, but if you'd prefer
+        to load only a subset of all the headers, pass in a list of the
+        headers you'd like as `headers`.
+        """
         reader = ExcelRW.UnicodeDictReader(path, sheet_name_or_num)
         return cls(reader, headers=headers)
 
@@ -310,7 +319,7 @@ class DataTable(object):
         return self.__print_table(u"\t")
 
     def __print_table(self, row_delim, header_delim=None,
-                      header_pad="", pad=""):
+                      header_pad=u"", pad=u""):
         """
         row_delim         default delimiter inserted between columns of every
                           row in the table.
@@ -322,12 +331,12 @@ class DataTable(object):
         if header_delim is None:
             header_delim = row_delim
         num_cols = len(self.fields)
-        accumulator = (("%s" + header_delim) * num_cols)[:-1] + u"\n"
-        accumulator = ((header_pad + accumulator + header_pad) %
+        accumulator = ((u"%s" + header_delim) * num_cols)[:-len(header_delim)]
+        accumulator = ((header_pad + accumulator + header_pad + u"\n") %
                        tuple(self.fields))
         for datarow in self:
-            rowstring = (("%s" + row_delim) * num_cols)[:-1] + u"\n"
-            rowstring = (pad + rowstring + pad) % tuple(datarow)
+            rowstring = ((u"%s" + row_delim) * num_cols)[:-len(row_delim)]
+            rowstring = (pad + rowstring + pad + u"\n") % tuple(datarow)
             accumulator += rowstring
         return accumulator[:-1]
 
@@ -424,6 +433,18 @@ class DataTable(object):
                 results.append(func(*[row[field] for field in fields]))
         return results
 
+    def col(self, col_name_or_num):
+        """
+        Returns the col at index `colnum` or name `colnum`.
+        """
+        if isinstance(col_name_or_num, basestring):
+            return self[col_name_or_num]
+        elif isinstance(col_name_or_num, (int, long)):
+            if col_name_or_num > len(self.fields):
+                raise IndexError("Invalid column index `%s` for DataTable" %
+                                 col_name_or_num)
+            return self.__data[self.fields[col_name_or_num]]
+
     def concat(self, other_datatable, inplace=False):
         """
         Concatenates two DataTables together, as long as column names
@@ -433,6 +454,9 @@ class DataTable(object):
         if not isinstance(other_datatable, DataTable):
             raise TypeError("`concat` requires a DataTable, not a %s" %
                             type(other_datatable))
+
+        # if the self table is empty, we can just return the other table
+        # if we need to do it in place, we just copy over the columns
         if not self.fields:
             if inplace:
                 for field in other_datatable.fields:
@@ -447,25 +471,15 @@ class DataTable(object):
             raise Exception("Columns do not match:\nself: %s\nother: %s" %
                             (self.fields, other_datatable.fields))
 
-        target_table = self if inplace else DataTable()
-
-        for field in self.fields:
-
-            target_table[field] = self[field] + other_datatable[field]
-
-        return target_table
-
-    def col(self, col_name_or_num):
-        """
-        Returns the col at index `colnum` or name `colnum`.
-        """
-        if isinstance(col_name_or_num, basestring):
-            return self[col_name_or_num]
-        elif isinstance(col_name_or_num, (int, long)):
-            if col_name_or_num > len(self.fields):
-                raise IndexError("Invalid column index `%s` for DataTable" %
-                                 col_name_or_num)
-            return self.__data[self.fields[col_name_or_num]]
+        if inplace:
+            for field in self.fields:
+                self.__data[field] = self[field] + other_datatable[field]
+            return self
+        else:
+            new_table = DataTable()
+            for field in self.fields:
+                new_table[field] = self[field] + other_datatable[field]
+            return new_table
 
     def distinct(self, fieldname, key=None):
         """
@@ -476,6 +490,9 @@ class DataTable(object):
     # TODO: docstring
     def groupby(self, *groupfields, **aggregators):
         return GroupBy(self, groupfields, aggregators)
+
+    def join(self):
+        pass
 
     def mask(self, masklist):
         """
@@ -623,10 +640,21 @@ class DataTable(object):
         writer.writerows(self)
         writer.close()
 
-    def writexls(self, path, sheetname="default"):
+    def writexlsx(self, path, sheetname="default"):
+        """
+        Writes this table to an .xlsx file at the specified `path`.
+
+        If you'd like to specify a sheetname, you may do so.
+
+        If you'd like to write one workbook with different DataTables
+        for each sheet, import the `excel` function from acrylic. You
+        can see that code in `utils.py`.
+
+        Note that the outgoing file is an .xlsx file, so it'd make sense to
+        name that way.
+        """
         writer = ExcelRW.UnicodeWriter(path)
         writer.set_active_sheet(sheetname)
-
         writer.writerow(self.fields)
         writer.writerows(self)
         writer.save()
