@@ -27,6 +27,12 @@ class DataTable(object):
         If your list of lists data doesn't have headers ("fields"),
         make some and pass them into the `headers` parameter.
 
+        If your data has headers and you pass in headers anyways, headers
+        acts as a filter and selects the subset of headers you want included.
+        If you pass in a header that isn't in the data, there will be an error.
+
+        ---
+
         If your data is CSV, TSV, or similar format, you can even copy-paste
         it the relevant script for on-the-fly DataTable construction. See
         the DataTable.fromcsvstring() method for details.
