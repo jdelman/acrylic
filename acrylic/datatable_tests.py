@@ -114,7 +114,7 @@ def test_05distinct():
     distinct_apostles = data.distinct('apostle')
     assert_equal(len(distinct_apostles), 11)
 
-    true_distinct = [u'judas',
+    true_distinct = (u'judas',
                      u'thaddeus',
                      u'matthew',
                      u'bartholomew',
@@ -124,21 +124,21 @@ def test_05distinct():
                      u'james',
                      u'philip',
                      u'simon the less',
-                     u'john']
+                     u'john')
 
     assert_equal(true_distinct, distinct_apostles)
 
     distinct_apostle_lens = data.distinct('apostle', key=lambda x: len(x))
     assert_equal(len(distinct_apostle_lens), 8)
 
-    true_distinct = [u'judas',
+    true_distinct = (u'judas',
                      u'thaddeus',
                      u'matthew',
                      u'bartholomew',
                      u'andrew',
                      u'ペトロ',
                      u'simon the less',
-                     u'john']
+                     u'john')
 
     assert_equal(true_distinct, distinct_apostle_lens)
 
@@ -155,11 +155,11 @@ def test_06apply():
     assert_equal(apostle_lens, data.apply(lambda x: len(x['apostle'])))
 
 
-def test_07writexls():
+def test_07writeexcel():
     global data
 
-    data.writexls('testout.xls')
-    reader = ExcelRW.UnicodeDictReader('testout.xls')
+    data.writexlsx('testout.xlsx')
+    reader = ExcelRW.UnicodeDictReader('testout.xlsx')
     written_data = datatable.DataTable(reader)
     for row, written_row in zip(data, written_data):
         assert_equal(row, written_row)
@@ -281,7 +281,7 @@ def test_18contains():
     assert_equal(data.__contains__('colors'), True)
     assert_equal('colors' in data, True)
     assert_equal(data.__contains__('water'), False)
-    assert_equal('water' not in data, False)
+    assert_equal('water' in data, False)
 
 
 def test_19str():

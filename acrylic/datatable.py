@@ -226,7 +226,7 @@ class DataTable(object):
         return new_datatable
 
     @classmethod
-    def fromxls(cls, path, sheet_name_or_num=0, headers=None):
+    def fromexcel(cls, path, sheet_name_or_num=0, headers=None):
         """
         Constructs a new DataTable from an Excel file.
 
@@ -433,6 +433,18 @@ class DataTable(object):
                 results.append(func(*[row[field] for field in fields]))
         return results
 
+    def col(self, col_name_or_num):
+        """
+        Returns the col at index `colnum` or name `colnum`.
+        """
+        if isinstance(col_name_or_num, basestring):
+            return self[col_name_or_num]
+        elif isinstance(col_name_or_num, (int, long)):
+            if col_name_or_num > len(self.fields):
+                raise IndexError("Invalid column index `%s` for DataTable" %
+                                 col_name_or_num)
+            return self.__data[self.fields[col_name_or_num]]
+
     def concat(self, other_datatable, inplace=False):
         """
         Concatenates two DataTables together, as long as column names
@@ -469,18 +481,6 @@ class DataTable(object):
                 new_table[field] = self[field] + other_datatable[field]
             return new_table
 
-    def col(self, col_name_or_num):
-        """
-        Returns the col at index `colnum` or name `colnum`.
-        """
-        if isinstance(col_name_or_num, basestring):
-            return self[col_name_or_num]
-        elif isinstance(col_name_or_num, (int, long)):
-            if col_name_or_num > len(self.fields):
-                raise IndexError("Invalid column index `%s` for DataTable" %
-                                 col_name_or_num)
-            return self.__data[self.fields[col_name_or_num]]
-
     def distinct(self, fieldname, key=None):
         """
         Returns the unique values seen at `fieldname`.
@@ -490,6 +490,9 @@ class DataTable(object):
     # TODO: docstring
     def groupby(self, *groupfields, **aggregators):
         return GroupBy(self, groupfields, aggregators)
+
+    def join(self):
+        pass
 
     def mask(self, masklist):
         """
@@ -637,7 +640,19 @@ class DataTable(object):
         writer.writerows(self)
         writer.close()
 
-    def writexls(self, path, sheetname="default"):
+    def writexlsx(self, path, sheetname="default"):
+        """
+        Writes this table to an .xlsx file at the specified `path`.
+
+        If you'd like to specify a sheetname, you may do so.
+
+        If you'd like to write one workbook with different DataTables
+        for each sheet, import the `excel` function from acrylic. You
+        can see that code in `utils.py`.
+
+        Note that the outgoing file is an .xlsx file, so it'd make sense to
+        name that way.
+        """
         writer = ExcelRW.UnicodeWriter(path)
         writer.set_active_sheet(sheetname)
         writer.writerow(self.fields)
