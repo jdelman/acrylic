@@ -5,11 +5,13 @@ from collections import OrderedDict
 from datarow import datarow_constructor
 from groupby import GroupBy
 from itertools import chain, compress, ifilterfalse, izip
+from random import shuffle
 from types import GeneratorType
+
+from . import ExcelRW
 
 import csv
 import cStringIO
-import ExcelRW
 import UnicodeRW
 
 
@@ -43,8 +45,8 @@ class DataTable(object):
             return
 
         if not hasattr(iterable, '__iter__'):
-            raise Exception("DataTable takes an iterable. "
-                            "%s is not an iterable." % type(iterable))
+            raise Exception("DataTable takes an iterable and "
+                            "%s is not an iterable" % type(iterable))
 
         iterator = iterable.__iter__()
         first_row = iterator.next()
@@ -199,7 +201,7 @@ class DataTable(object):
         if not isinstance(csvstring, basestring):
             raise Exception("If trying to construct a DataTable with "
                             "a list of lists, just use the main "
-                            "constructor. Make sure to include a header row.")
+                            "constructor. Make sure to include a header row")
 
         stringio = cStringIO.StringIO(csvstring.encode('utf-8'))
         csv_data = csv.reader((line for line in stringio),
@@ -301,14 +303,28 @@ class DataTable(object):
         else:
             return len(self.__data.viewvalues().__iter__().next())
 
-    # TODO: set with slice?
-    # TODO: auto-expand scalars?
     def __setitem__(self, fieldname, column):
         """
+        Sets a column with the specified name to the specified value:
+
         dt['new_column'] = [1, 2, 3]
+
+        1. If the column name doesn't exist, it will be created.
+        2. If the column value provided is a tuple, it will be cast to a list.
+        3. If the column value isn't a list, tuple, or array, it will
+           be assumed that you're trying to set a whole column to some scalar
+           value. For example:
+
+           dt['another_column'] = True
+
+           ... will set the entire column, for the length of the table, equal
+           to `True`.
         """
         if not isinstance(column, (list, array)):
-            column = list(column)
+            if isinstance(column, tuple):
+                column = list(column)
+            else:
+                column = [column] * len(self)
         if self.__data and len(column) != len(self):
             raise Exception("New column length (%s) must match length "
                             "of table (%s)" % (len(column), len(self)))
@@ -407,7 +423,7 @@ class DataTable(object):
                 if not len(row) == len(self.fields):
                     raise Exception("The row being appended does not have the "
                                     "correct length. It should have a length "
-                                    "of %s, but is %s." % (len(self.fields),
+                                    "of %s, but is %s" % (len(self.fields),
                                                            len(row)))
                 # we're just going to hope that the list's contents are
                 # provided in the right order, and of the right type.
@@ -435,7 +451,7 @@ class DataTable(object):
                     for field in fields:
                         if field not in self:
                             raise Exception("Column `%s` does not exist "
-                                            "in DataTable." % field)
+                                            "in DataTable" % field)
                 results.append(func(*[row[field] for field in fields]))
         return results
 
@@ -487,6 +503,9 @@ class DataTable(object):
                 new_table[field] = self[field] + other_datatable[field]
             return new_table
 
+    def copy(self):
+        return self.fromdict(self.__data)
+
     def distinct(self, fieldname, key=None):
         """
         Returns the unique values seen at `fieldname`.
@@ -518,6 +537,15 @@ class DataTable(object):
             new_datatable[field] = list(compress(self[field], masklist))
         return new_datatable
 
+    def mutapply(self, func, field):
+        """
+        Applies func in-place to the field specified.
+
+        In other words, overwrites `field` column with the results
+        of the apply to that column.
+        """
+        self[field] = self.apply(func, field)
+
     def rename(self, old_name, new_name):
         """
         Renames a specific field, and preserves the underlying order.
@@ -544,11 +572,11 @@ class DataTable(object):
         """
         if not len(fields_in_new_order) == len(self.fields):
             raise Exception("Fields to reorder with are not the same length "
-                            "(%s) as the original fields (%s)." %
+                            "(%s) as the original fields (%s)" %
                             (len(fields_in_new_order), len(self.fields)))
         if not set(fields_in_new_order) == set(self.fields):
             raise Exception("Fields to reorder with should be the same "
-                            "as the original fields.")
+                            "as the original fields")
         new = OrderedDict()
         for field in fields_in_new_order:
             new[field] = self.__data[field]
@@ -566,6 +594,25 @@ class DataTable(object):
             raise IndexError("Invalid row index `%s` for DataTable" % rownum)
         return datarow_constructor(self.fields)([self[field][rownum]
                                                  for field in self.fields])
+
+    def sample(self, num):
+        """
+        Returns a new table with rows randomly sampled.
+
+        We create a mask with `num` True bools, and fill it with False bools
+        until it is the length of the table. We shuffle it, and apply that
+        mask to the table.
+        """
+        if num > len(self):
+            return self.copy()
+        elif num < 0:
+            raise IndexError("Cannot sample a negative number of rows "
+                             "from a DataTable")
+
+        random_row_mask = ([True] * num) + ([False] * (len(self) - num))
+        shuffle(random_row_mask)
+
+        return self.mask(random_row_mask)
 
     def sort(self, fieldname, key=lambda x: x, desc=False, inplace=False):
         """
@@ -640,8 +687,10 @@ class DataTable(object):
         """
         return self.where(fieldname, value, negate=True)
 
-    def writecsv(self, path):
-        writer = UnicodeRW.UnicodeWriter(open(path, 'wb'), self.fields)
+    def writecsv(self, path, delimiter=","):
+        writer = UnicodeRW.UnicodeWriter(open(path, 'wb'),
+                                         self.fields,
+                                         delimiter=delimiter)
         writer.writerow(self.fields)
         writer.writerows(self)
         writer.close()
@@ -695,7 +744,7 @@ def parse_column(column):
 
 def validate_fields(fields):
     if not all([isinstance(field, basestring) for field in fields]):
-        raise Exception("Column headers/fields must be strings.")
+        raise Exception("Column headers/fields must be strings")
 
 
 def unique_everseen(iterable, key=None):

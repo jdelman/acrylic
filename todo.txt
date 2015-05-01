@@ -1,3 +1,16 @@
+# IMMEDIATE
+
+. make sure sample method works
+. make sure overriding headers when passing in a list of dicts works as expected
+. optional type enforcement (especially when reading from excel, etc.)
+. what about trailing None?
+
+# IDEAS
+
+. column or row assignment with slice
+. auto-optimize to array new columns to arrays
+. type inference
+
 # PRINTING
 
 . Great looking console printing.
@@ -94,6 +107,9 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 . `print table.jira` prints the JIRA representation of a table
 . readthedocs
 . improve setup.py (take inspiration from openpyxl's)
+. document `sample` method
+. document `mutapply`
+. scalar inference from setcolumn
 
 # TESTING AND PROFILING
 

@@ -8,12 +8,14 @@ from nose.tools import (assert_equal,
 import datatable
 import ExcelRW
 
+TEST_DATA_LOCATION = './tests/testdata.xlsx'
+TEST_OUT_LOCATION = './tests/testout.xlsx'
 
-excel_reader = ExcelRW.UnicodeDictReader('testdata.xlsx')
+excel_reader = ExcelRW.UnicodeDictReader(TEST_DATA_LOCATION)
 data = datatable.DataTable(excel_reader)
 
-raw_excel_data_lists = list(ExcelRW.UnicodeReader('testdata.xlsx'))
-raw_excel_data_dicts = list(ExcelRW.UnicodeDictReader('testdata.xlsx'))
+raw_excel_data_lists = list(ExcelRW.UnicodeReader(TEST_DATA_LOCATION))
+raw_excel_data_dicts = list(ExcelRW.UnicodeDictReader(TEST_DATA_LOCATION))
 
 
 def test_00csvstringconstructor():
@@ -50,7 +52,7 @@ thaddeus	0.7175	0.075857	yellow	10	strin,"dfe\"ns
 def test_00listconstructor():
     global data
 
-    reader = ExcelRW.UnicodeReader('testdata.xlsx')
+    reader = ExcelRW.UnicodeReader(TEST_DATA_LOCATION)
     csv_data = datatable.DataTable(reader)
 
     for row, csv_row in zip(data, csv_data):
@@ -158,8 +160,8 @@ def test_06apply():
 def test_07writeexcel():
     global data
 
-    data.writexlsx('testout.xlsx')
-    reader = ExcelRW.UnicodeDictReader('testout.xlsx')
+    data.writexlsx(TEST_OUT_LOCATION)
+    reader = ExcelRW.UnicodeDictReader(TEST_OUT_LOCATION)
     written_data = datatable.DataTable(reader)
     for row, written_row in zip(data, written_data):
         assert_equal(row, written_row)

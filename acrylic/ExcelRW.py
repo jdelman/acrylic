@@ -149,7 +149,7 @@ class UnicodeDictWriter(UnicodeWriter):
 
     def set_active_sheet(self, name, fieldnames=None):
         if name not in self._cache:
-            if fieldnames is None:
+            if fieldnames is not None:
                 self._cache[name] = self._fieldnames = fieldnames
             else:
                 self._fieldnames = None
