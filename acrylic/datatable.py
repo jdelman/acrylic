@@ -2,17 +2,18 @@
 from __future__ import division, print_function
 from array import array
 from collections import OrderedDict
-from datarow import datarow_constructor
-from groupby import GroupBy
 from itertools import chain, compress, ifilterfalse, izip
 from random import shuffle
 from types import GeneratorType
 
+from .datarow import datarow_constructor
+from .groupby import GroupByTable
+
 from . import ExcelRW
+from . import UnicodeRW
 
 import csv
 import cStringIO
-import UnicodeRW
 
 
 class DataTable(object):
@@ -42,6 +43,13 @@ class DataTable(object):
         self.__data = OrderedDict()
 
         if iterable is None:
+            # TODO: this exists so that we can create a DataTable
+            # TODO: with no data, but we can make headers
+            # TODO: what's the best way to address this headers issue?
+            if headers is not None:
+                validate_fields(headers)
+                for header in headers:
+                    self.__data[header] = []
             return
 
         if not hasattr(iterable, '__iter__'):
@@ -424,7 +432,7 @@ class DataTable(object):
                     raise Exception("The row being appended does not have the "
                                     "correct length. It should have a length "
                                     "of %s, but is %s" % (len(self.fields),
-                                                           len(row)))
+                                                          len(row)))
                 # we're just going to hope that the list's contents are
                 # provided in the right order, and of the right type.
                 for (_, column), element in izip(self.__data.items(), row):
@@ -513,8 +521,8 @@ class DataTable(object):
         return tuple(unique_everseen(self[fieldname], key=key))
 
     # TODO: docstring
-    def groupby(self, *groupfields, **aggregators):
-        return GroupBy(self, groupfields, aggregators)
+    def groupby(self, *groupfields):
+        return GroupByTable(self, groupfields)
 
     def join(self):
         pass
