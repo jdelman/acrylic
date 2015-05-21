@@ -36,7 +36,8 @@ def datarow_constructor(fields):
                 try:
                     index = self._fields.index(item)  # O(n) time
                 except ValueError:
-                    raise ValueError("Column `%s` does not exist in DataRow.")
+                    raise ValueError("Column `%s` does not exist in DataRow." %
+                                     item)
                 return super(DataRow, self).__getitem__(index)
             elif isinstance(item, (int, long, slice)):
                 return super(DataRow, self).__getitem__(item)

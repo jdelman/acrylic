@@ -3,7 +3,7 @@ from __future__ import division, print_function
 from array import array
 from collections import OrderedDict
 from itertools import chain, compress, ifilterfalse, izip
-from random import shuffle
+from random import random, randrange, shuffle
 from types import GeneratorType
 
 from .datarow import datarow_constructor
@@ -522,6 +522,9 @@ class DataTable(object):
 
     # TODO: docstring
     def groupby(self, *groupfields):
+        """
+
+        """
         return GroupByTable(self, groupfields)
 
     def join(self):
@@ -620,7 +623,15 @@ class DataTable(object):
         random_row_mask = ([True] * num) + ([False] * (len(self) - num))
         shuffle(random_row_mask)
 
-        return self.mask(random_row_mask)
+        sampled_table = self.mask(random_row_mask)
+        random_col_name = 'random_sorting_column'
+        while random_col_name in sampled_table:
+            random_col_name = '%030x' % randrange(16**30)
+        sampled_table[random_col_name] = [random()
+                                          for _ in xrange(len(sampled_table))]
+        sampled_table.sort(random_col_name, inplace=True)
+        del sampled_table[random_col_name]
+        return sampled_table
 
     def sort(self, fieldname, key=lambda x: x, desc=False, inplace=False):
         """

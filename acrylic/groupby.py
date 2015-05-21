@@ -33,7 +33,7 @@ class GroupByTable(object):
                 self.__key_to_group_map[key] = [row]
         self.__grouptable['groupkey'] = self.__key_to_group_map.keys()
 
-    def agg(self, func, *fields):
+    def __call__(self, func, *fields):
         if func.__name__ == '<lambda>':
             name = "lambda%04d" % self.__lambda_num
             self.__lambda_num += 1
@@ -63,6 +63,9 @@ class GroupByTable(object):
 
         self.__grouptable[name] = aggregated_column
         return self
+
+    def __len__(self):
+        return len(self.__key_to_group_map)
 
     def collect(self):
         return self.__grouptable
