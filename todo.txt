@@ -1,6 +1,5 @@
 # IMMEDIATE
 
-. make sure sample method works
 . make sure overriding headers when passing in a list of dicts works as expected
 . optional type enforcement (especially when reading from excel, etc.)
 . what about trailing None?
@@ -99,17 +98,12 @@ Line #      Hits         Time  Per Hit   % Time  Line Contents
 
 # DOCUMENTATION
 
-. Editing with `grip`  # TODO: what does `grip` mean?
 . Casting can be done with .apply easily
 . append, concat
-. `print table.t` prints a tab-separated table for easy pasting
-. `print table.html` prints an html representation for IPython (?)
-. `print table.jira` prints the JIRA representation of a table
 . readthedocs
 . improve setup.py (take inspiration from openpyxl's)
 . document `sample` method
 . document `mutapply`
-. scalar inference from setcolumn
 
 # TESTING AND PROFILING
 

@@ -1,4 +1,4 @@
-# Acrylic 0.1.0
+# Acrylic 0.1.1
 
 ## Construction
 
@@ -76,7 +76,7 @@ g,h,i''')
 ### Write data to Excel:
 
 ```python
-data.writexlsx('myoutput.xls')
+data.writexlsx('myoutput.xlsx')
 ```
 ### Write many DataTables to Excel:
 
@@ -99,10 +99,17 @@ my_column = data['column_name']
 Fetch a row, and the value at a column:
 
 ```python
-some_row = data[5]
+# preferred
+value = data['column_name'][5]  # col, row
+```
+
+These ways also work for fetching a specific cell:
+
+```python
+some_row = data[5]  # fetches row at index 5
 value = some_row['column_name']
 
-# equivalent, assuming `column_name` is the third column, zero-indexed.
+# equivalent, assuming `column_name` is the third column, zero-indexed
 value = data[5][2]  # row, col
 
 # equivalent
@@ -122,7 +129,7 @@ brands = data.distinct('brands')
 
 Rows are a special class called a `DataRow`, inspired by `namedtuple`. It is
 very lightweight (for a Python object), and is essentially a `tuple` with
-two exceptions:
+two additions:
 
 - It has a `.items()` method for iterating through column names and 
 values like you would with a `dict`.
@@ -133,14 +140,6 @@ Being a tuple, you can slice (e.g., `row[0:20:2]`), unpack during iteration,
 and so on. 
 
 ## Manipulating a DataTable
-
-### Adding columns
-
-```python
-data['diff'] = data.apply(lambda row: row['new_count']/row['old_count'])
-# or
-data['diff'] = data.apply(short_diff, 'old_count', 'new_count')
-```
 
 ### Iterating
 
@@ -191,11 +190,48 @@ data['double_val'] = data.apply(lambda x: x**2, 'val')
 data['double_val'] = data.apply(lambda row: row['val']**2)
 ```
 
+### Adding columns
+
+Columns can be added simply by assigning any list value to a column name:
+
+```python
+data['squares'] = [i**2 for i in range(len(data))]
+```
+
+Columns can also be added by applying a function to a column and setting 
+that result to a new column:
+
+```python
+data['diff'] = data.apply(lambda row: row['new_count']/row['old_count'])
+# or
+data['diff'] = data.apply(short_diff, 'old_count', 'new_count')
+```
+
+If you want to set a whole column to some "scalar"-like value, here is some
+sugar:
+
+```python
+data['five'] = 5
+data['notes'] = 'Unknown'
+```
+
 ### Slicing
 
 Slicing a table, like `data[4:34:3]`, gracefully handling of out of bounds 
 slicings, like a normal Python `list` does. The slice is also shallow copy,
 just like a Python `list` slice.
+
+### Concatenating
+
+The `concat` method 
+
+```python
+
+```
+
+### Appending
+
+TODO
 
 ### Sorting
 
@@ -287,15 +323,26 @@ result = data.wherefunc(conditional_filter)
 You can also create a filtered DataTable by passing an iterable of `bool` to 
 the `mask` method.
 
-## Join
+## Groupby TODO
 
-TODO
-
-## Groupby
-
-TODO
+```python
+data.groupby
+```
 
 ## Display
+
+By default, `print`ing a DataTable returns a tab-separated string 
+representation of the table. You can also print a few other common formats
+using special properties of the DataTable object:
+
+```python
+print data.jira  # Jira-style formatting, "|" separated
+print data.html  # HTML table
+print data.pretty  # a "pretty table" style table for the console (TODO)
+```
+
+
+## Join
 
 TODO
 

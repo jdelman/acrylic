@@ -388,6 +388,11 @@ class DataTable(object):
                                   header_pad=header,
                                   pad=row)
 
+    # TODO
+    @property
+    def pretty(self):
+        return self.t
+
     @property
     def t(self):
         return self.__print_table(u"\t")
@@ -402,43 +407,59 @@ class DataTable(object):
         lists/tuples/generators are simply trusted to be in the correct order
         and of the correct type (if relevant).
 
+        If the table being appended to is empty, the columns are inferred
+        from the row being appended.
+
         DataRows and namedtuples' `_fields` protected class attribute is
         checked for the field names. Those are checked against the DataTable
         and then appended to the relevant columns using those field names.
         """
         if isinstance(row, dict):
-            if not set(row.keys()) == set(self.fields):
+            if self.fields and not set(row.keys()) == set(self.fields):
                 raise Exception("Cannot append a dict to DataTable without "
                                 "all keys matching (order being irrelevant).\n"
                                 "dict: %s\nDataTable: %s" % (row.keys(),
                                                              self.fields))
-            for field in self.fields:
-                self.__data[field].append(row[field])
+            if not self.fields:
+                for field in row.keys():
+                    self.__data[field] = [row[field]]
+            else:
+                for field in self.fields:
+                    self.__data[field].append(row[field])
         elif isinstance(row, (list, tuple, GeneratorType)):
             if isinstance(row, tuple) and hasattr(row, '_fields'):
                 fieldnames = row._fields
-                if not set(fieldnames) == set(self.fields):
+                if self.fields and not set(fieldnames) == set(self.fields):
                     raise Exception("Cannot append a Datarow or namedtuple to "
                                     "DataTable without all fields matching "
                                     "(order being irrelevant).\n"
                                     "DataRow/namedtuple: %s\n"
                                     "DataTable: %s" % (fieldnames, self.fields))
-                for fieldname, value in izip(fieldnames, row):
-                    self.__data[fieldname].append(value)
+                if not self.fields:
+                    for fieldname, value in izip(fieldnames, row):
+                        self.__data[fieldname] = [value]
+                else:
+                    for fieldname, value in izip(fieldnames, row):
+                        self.__data[fieldname].append(value)
             else:
                 if isinstance(row, GeneratorType):
                     row = tuple(row)
-                if not len(row) == len(self.fields):
+                if self.fields and not len(row) == len(self.fields):
                     raise Exception("The row being appended does not have the "
                                     "correct length. It should have a length "
                                     "of %s, but is %s" % (len(self.fields),
                                                           len(row)))
-                # we're just going to hope that the list's contents are
+                if not self.fields:
+                    raise Exception("Can't append a list/tuple/GeneratorType "
+                                    "as a row if the table doesn't have "
+                                    "columns defined yet.")
+                # we're just going to hope that the generator's contents are
                 # provided in the right order, and of the right type.
                 for (_, column), element in izip(self.__data.items(), row):
                     column.append(element)
         else:
-            raise Exception("Unable to append `%s` to DataTable" % type(row))
+            raise Exception("Unable to append type `%s` to DataTable" %
+                            type(row))
 
     def apply(self, func, *fields):
         """
@@ -642,7 +663,11 @@ class DataTable(object):
         mutate the original table. Either way, a reference to the relevant
         table will be returned.
         """
-        field_index = tuple(self.fields).index(fieldname)
+        try:
+            field_index = tuple(self.fields).index(fieldname)
+        except ValueError:
+            raise ValueError("Sorting on a field that doesn't exist: `%s`" %
+                             fieldname)
 
         data_cols = izip(*sorted(izip(*[self.__data[field]
                                         for field in self.fields]),
