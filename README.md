@@ -341,7 +341,6 @@ print data.html  # HTML table
 print data.pretty  # a "pretty table" style table for the console (TODO)
 ```
 
-
 ## Join
 
 TODO

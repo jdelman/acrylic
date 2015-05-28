@@ -5,14 +5,14 @@ from nose.tools import (assert_equal,
                         assert_raises,
                         raises)
 
-import datatable
-import ExcelRW
+from acrylic import DataTable
+from acrylic import ExcelRW
 
-TEST_DATA_LOCATION = './tests/testdata.xlsx'
-TEST_OUT_LOCATION = './tests/testout.xlsx'
+TEST_DATA_LOCATION = './rename/testdata.xlsx'
+TEST_OUT_LOCATION = './rename/testout.xlsx'
 
 excel_reader = ExcelRW.UnicodeDictReader(TEST_DATA_LOCATION)
-data = datatable.DataTable(excel_reader)
+data = DataTable(excel_reader)
 
 raw_excel_data_lists = list(ExcelRW.UnicodeReader(TEST_DATA_LOCATION))
 raw_excel_data_dicts = list(ExcelRW.UnicodeDictReader(TEST_DATA_LOCATION))
@@ -30,19 +30,19 @@ def test_00csvstringconstructor():
     # "\'bart\',"dfe\\"ns <- with r'''''' and csv.QUOTE_NONE
     # "'bart',"dfe\"ns <- row copy-pasted from excel
 
-    csv_data = datatable.DataTable.fromcsvstring(ur"""apostle	randnum	randnum2	colors	regular numbers	comma,column
-john	0.1104	0.824761	black	4	strin,"dfe\"ns
-andrew	0.1836	0.568254	black	2	strin,"dfe\"ns
-philip	0.2069	0.662074	red	5	strin,"dfe\"ns
-judas	0.3623	0.055173	red	12	strin,"dfe\"ns
-bartholomew	0.3826	0.512637	black	6	"'bart',"dfe\"ns
-james	0.4481	0.746867	black	9	strin,"dfe\"ns
-ペトロ	0.468	0.606110	red	1	strin,"dfe\"ns
-thomas	0.5114	0.585969	yellow	7	strin,"dfe\"ns
-matthew	0.5927	0.239200	red	8	strin,"dfe\"ns
-simon the less	0.6132	0.762991	green	11	strin,"dfe\"ns
-james	0.6682	0.660805	red	3	strin,"dfe\"ns
-thaddeus	0.7175	0.075857	yellow	10	strin,"dfe\"ns
+    csv_data = DataTable.fromcsvstring(ur"""apostle   randnum randnum2    colors  regular numbers comma,column
+john    0.1104  0.824761    black   4   strin,"dfe\"ns
+andrew  0.1836  0.568254    black   2   strin,"dfe\"ns
+philip  0.2069  0.662074    red 5   strin,"dfe\"ns
+judas   0.3623  0.055173    red 12  strin,"dfe\"ns
+bartholomew 0.3826  0.512637    black   6   "'bart',"dfe\"ns
+james   0.4481  0.746867    black   9   strin,"dfe\"ns
+ペトロ 0.468   0.606110    red 1   strin,"dfe\"ns
+thomas  0.5114  0.585969    yellow  7   strin,"dfe\"ns
+matthew 0.5927  0.239200    red 8   strin,"dfe\"ns
+simon the less  0.6132  0.762991    green   11  strin,"dfe\"ns
+james   0.6682  0.660805    red 3   strin,"dfe\"ns
+thaddeus    0.7175  0.075857    yellow  10  strin,"dfe\"ns
 """, delimiter="\t")
 
     for row, csv_string_row in zip(data, csv_data):
@@ -53,7 +53,7 @@ def test_00listconstructor():
     global data
 
     reader = ExcelRW.UnicodeReader(TEST_DATA_LOCATION)
-    csv_data = datatable.DataTable(reader)
+    csv_data = DataTable(reader)
 
     for row, csv_row in zip(data, csv_data):
         assert_equal(row, csv_row)
@@ -162,7 +162,7 @@ def test_07writeexcel():
 
     data.writexlsx(TEST_OUT_LOCATION)
     reader = ExcelRW.UnicodeDictReader(TEST_OUT_LOCATION)
-    written_data = datatable.DataTable(reader)
+    written_data = DataTable(reader)
     for row, written_row in zip(data, written_data):
         assert_equal(row, written_row)
 
@@ -196,17 +196,17 @@ def test_09goodrename():
 
 
 def test_10len():
-    table = datatable.DataTable()
+    table = DataTable()
     assert_equal(len(table), 0)
 
 
 def test_11buildwithdict():
-    table = datatable.DataTable.fromdict({'a': [1, 2, 3],
+    table = DataTable.fromdict({'a': [1, 2, 3],
                                           'b': [4, 5, 6],
                                           'c': [7, 8, 9]})
     assert_equal(table.row(1)['b'], 5)
 
-    table = datatable.DataTable.fromdict(OrderedDict([('a', [1, 2, 3]),
+    table = DataTable.fromdict(OrderedDict([('a', [1, 2, 3]),
                                                       ('b', [4, 5, 6]),
                                                       ('c', [7, 8, 9])]))
     assert_equal(table.row(2)['a'], 3)
@@ -298,7 +298,7 @@ def test_19str():
 #     colorgroups = data.groupby('colors', agg=len, concat='apostle')
 #     print colorgroups
 #
-#     test = datatable.DataTable()
+#     test = DataTable()
 #     test['colors'] = ['red', 'yellow', 'black', 'green']
 #     test['len'] = [5, 2, 4, 1]
 #     test['group_concat(apostle)'] = [u'judas,matthew,ペトロ,james,philip',
@@ -319,7 +319,7 @@ def test_20missing_rename():
 
 @raises(Exception)
 def test_21noiterable():
-    datatable.DataTable(4)
+    DataTable(4)
 
 
 @raises(TypeError)
@@ -343,42 +343,42 @@ def test_24badrename():
 @raises(Exception)
 def test_25badcsvstringconstruction():
     reader = raw_excel_data_dicts[:]
-    datatable.DataTable.fromcsvstring(reader)
+    DataTable.fromcsvstring(reader)
 
 
 @raises(Exception)
 def test_26badrowinexcel():
     reader = raw_excel_data_dicts[:]
     del reader[4]['apostle']
-    datatable.DataTable(reader)
+    DataTable(reader)
 
 
 @raises(TypeError)
 def test_27wrongrowtypeexceldict():
     reader = raw_excel_data_dicts[:]
     reader[4] = ur"""sixcha"""
-    datatable.DataTable(reader)
+    DataTable(reader)
 
 
 @raises(TypeError)
 def test_28wrongrowtypeexcellist():
     reader = raw_excel_data_lists[:]
     reader[4] = ur"""sixcha"""
-    datatable.DataTable(reader)
+    DataTable(reader)
 
 
 @raises(Exception)
 def test_29wrongrowlenthexcellist():
     reader = raw_excel_data_lists[:]
     reader[5] = reader[5][:-1]
-    datatable.DataTable(reader)
+    DataTable(reader)
 
 
 @raises(Exception)
 def test_30wrongrowtypeexcellist():
     reader = raw_excel_data_lists[:]
     reader[0] = lambda x: x**2
-    datatable.DataTable(reader)
+    DataTable(reader)
 
 
 def test_31getcolexception():
@@ -400,7 +400,7 @@ def test_33collengtherror():
 
 @raises(Exception)
 def test_34stringrows():
-    datatable.DataTable(['row1', 'row2', 'row3', 'row4'])
+    DataTable(['row1', 'row2', 'row3', 'row4'])
 
 
 def test_35wherenot():

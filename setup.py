@@ -9,12 +9,14 @@ setup(
     name='acrylic',
     version='0.1.1',
     description='Simple tabular data with Python.',
+    packages=['acrylic'],
     url="http://github.com/emlazzarin/acrylic",
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
         'Development Status :: 3 - Alpha',
+        'Intended Audience :: Developers',
         'Programming Language :: Python :: 2.7',
     ],
-    install_requires=['openpyxl']
+    install_requires=['openpyxl', 'jdcal', 'nose']
 )
