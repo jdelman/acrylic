@@ -10,7 +10,7 @@ setup(
     version='0.1.1',
     description='Simple tabular data with Python.',
     packages=['acrylic'],
-    url="http://bitbucket.com/emlazzarin/acrylic/",
+    url="http://github.com/emlazzarin/acrylic/",
 
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
