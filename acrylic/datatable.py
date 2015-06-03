@@ -2,18 +2,19 @@
 from __future__ import division, print_function
 from array import array
 from collections import OrderedDict
-from itertools import chain, compress, ifilterfalse, izip
+from cStringIO import StringIO
+from itertools import chain, compress, izip
 from random import random, randrange, shuffle
 from types import GeneratorType
 
 from .datarow import datarow_constructor
-from .groupby import GroupByTable
+from .groupby import GroupbyTable
+from .utils import unique_everseen
 
 from . import ExcelRW
 from . import UnicodeRW
 
 import csv
-import cStringIO
 
 
 class DataTable(object):
@@ -211,7 +212,7 @@ class DataTable(object):
                             "a list of lists, just use the main "
                             "constructor. Make sure to include a header row")
 
-        stringio = cStringIO.StringIO(csvstring.encode('utf-8'))
+        stringio = StringIO(csvstring.encode('utf-8'))
         csv_data = csv.reader((line for line in stringio),
                               delimiter=delimiter,
                               dialect=csv.excel,
@@ -344,9 +345,8 @@ class DataTable(object):
     def __str__(self):
         return unicode(self).encode('utf-8')
 
-    # TODO: replace with "pretty" console table.
     def __unicode__(self):
-        return self.__print_table(u"\t")
+        return self.pretty
 
     def __print_table(self, row_delim, header_delim=None,
                       header_pad=u"", pad=u""):
@@ -388,7 +388,7 @@ class DataTable(object):
                                   header_pad=header,
                                   pad=row)
 
-    # TODO
+    # TODO: print a "prettytable" style table
     @property
     def pretty(self):
         return self.t
@@ -544,12 +544,28 @@ class DataTable(object):
     # TODO: docstring
     def groupby(self, *groupfields):
         """
-
+        Groups rows in this table according to the unique combinations of
+        `groupfields` combined.
         """
-        return GroupByTable(self, groupfields)
+        return GroupbyTable(self, groupfields)
 
-    def join(self):
-        pass
+    # TODO: this is a placeholder and only does a very simple left join.
+    def join(self, right_table, on):
+        keymap = {}
+        for row in right_table:
+            if row[on] in keymap:
+                keymap[row[on]].append(row)
+            else:
+                keymap[row[on]] = [row]
+        new_table = []
+        for row in self:
+            if row[on] in keymap:
+                left_dict = dict(row.items())
+                for item in keymap[row[on]]:
+                    left_dict_copy = left_dict.copy()
+                    left_dict_copy.update(dict(item.items()))
+                    new_table.append(left_dict_copy)
+        return DataTable(new_table)
 
     def mask(self, masklist):
         """
@@ -569,33 +585,34 @@ class DataTable(object):
             new_datatable[field] = list(compress(self[field], masklist))
         return new_datatable
 
-    def mutapply(self, func, field):
+    def mutapply(self, function, fieldname):
         """
-        Applies func in-place to the field specified.
+        Applies `function` in-place to the field name specified.
 
-        In other words, overwrites `field` column with the results
-        of the apply to that column.
+        In other words, `mutapply` overwrites column `fieldname`
+        ith the results of applying `function` to each element of that column.
         """
-        self[field] = self.apply(func, field)
+        self[fieldname] = self.apply(function, fieldname)
 
-    def rename(self, old_name, new_name):
+    def rename(self, old_fieldname, new_fieldname):
         """
         Renames a specific field, and preserves the underlying order.
         """
-        if old_name not in self:
-            raise Exception("DataTable does not have field `%s`" % old_name)
+        if old_fieldname not in self:
+            raise Exception("DataTable does not have field `%s`" %
+                            old_fieldname)
 
-        if not isinstance(new_name, basestring):
+        if not isinstance(new_fieldname, basestring):
             raise ValueError("DataTable fields must be strings, not `%s`" %
-                             type(new_name))
+                             type(new_fieldname))
 
-        if old_name == new_name:
+        if old_fieldname == new_fieldname:
             return
 
         new_names = self.fields
-        location = new_names.index(old_name)
+        location = new_names.index(old_fieldname)
         del new_names[location]
-        new_names.insert(location, new_name)
+        new_names.insert(location, new_fieldname)
         self.fields = new_names
 
     def reorder(self, fields_in_new_order):
@@ -718,12 +735,16 @@ class DataTable(object):
             raise Exception("Unsure how to filter DataTable where value is "
                             "of type: %s" % type(value))
 
-    def wherefunc(self, func):
+    def wherefunc(self, func, negate=True):
         """
         Applies a function to an entire row and filters the rows based on the
         boolean output of that function.
         """
-        return self.mask([func(item) for item in self])
+        if not negate:
+            truth_func = lambda boolean: boolean
+        else:
+            truth_func = lambda boolean: not boolean
+        return self.mask([truth_func(func(item)) for item in self])
 
     def wherenot(self, fieldname, value):
         """
@@ -789,24 +810,3 @@ def parse_column(column):
 def validate_fields(fields):
     if not all([isinstance(field, basestring) for field in fields]):
         raise Exception("Column headers/fields must be strings")
-
-
-def unique_everseen(iterable, key=None):
-    """
-    List unique elements, preserving order. Remember all elements ever seen.
-
-    unique_everseen('AAAABBBCCDAABBB') --> A B C D
-    unique_everseen('ABBCcAD', str.lower) --> A B C D
-    """
-    seen = set()
-    seen_add = seen.add
-    if key is None:
-        for element in ifilterfalse(seen.__contains__, iterable):
-            seen_add(element)
-            yield element
-    else:
-        for element in iterable:
-            k = key(element)
-            if k not in seen:
-                seen_add(k)
-                yield element

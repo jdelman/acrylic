@@ -1,10 +1,6 @@
 # coding: utf-8
-# ------------------------------------------------------------------------------
-# Name:        ExcelRW.py
-# Author:      emlazzarin
-# ------------------------------------------------------------------------------
-
 from collections import OrderedDict
+
 from openpyxl import load_workbook, Workbook
 
 

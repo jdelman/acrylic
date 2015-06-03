@@ -3,9 +3,7 @@
 from itertools import izip
 
 """
-Abandon hope, all ye who enter here.
-
-This strange thing exists because it's the best way that I know of to
+This exists because it's the best way that I know of to
 create an object with:
 
 1. a dict-like mapping
@@ -55,5 +53,11 @@ def datarow_constructor(fields):
 
         def items(self):
             return izip(self._fields, self)
+
+        def get(self, value, default=None):
+            if value not in self._fields:
+                return default
+            else:
+                return self.__getitem__(value)
 
     return DataRow
