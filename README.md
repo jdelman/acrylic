@@ -7,7 +7,8 @@ readable syntax.
 from acrylic import DataTable
 
 data = DataTable.fromcsv("sales_data.csv")
-data.where("price", greaterthan=30)
+data.wheregreater("price", 20).where("category", "electronics")
+
 
 ```
 

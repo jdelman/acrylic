@@ -28,14 +28,14 @@ class GroupbyTable(object):
 
     Here are a few other examples:
 
-    def most_recent_price(date, price):
+    def most_recent_price(dates, prices):
+
 
 
     sales = (orders.groupby('productid')
                    .agg([np.mean, np.sum], 'sale_price')
                    .agg())
 
-    x = data.groupby('asldkjfs').agg([np.sum, np.mean, np.std], 'number').agg(sum, col='number')
 
 
 
@@ -74,6 +74,11 @@ class GroupbyTable(object):
         self.__grouptable['groupkey'] = self.__key_to_group_map.keys()
 
     def agg(self, func, *fields):
+        """
+        Calls the aggregation function `func` on each group in the GroubyTable,
+        and leaves the results in a new column with the name of the aggregation
+        function.
+        """
         if func.__name__ == '<lambda>':
             name = "lambda%04d" % self.__lambda_num
             self.__lambda_num += 1
@@ -103,6 +108,11 @@ class GroupbyTable(object):
 
         self.__grouptable[name] = aggregated_column
         return self
+
+    def aggregate(self, func, *fields):
+        return self.agg(func, *fields)
+
+    aggregate.__doc__ = agg.__doc__
 
     def collect(self):
         """

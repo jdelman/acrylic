@@ -256,29 +256,33 @@ class DataTable(object):
         reader = ExcelRW.UnicodeDictReader(path, sheet_name_or_num)
         return cls(reader, headers=headers)
 
-    def __eq__(self, other):
-        """
-        Note that there is a bug (in my opinion) where two OrderedDicts
-        are considered equal if they are identical even if one dict
-        has more key-value pairs after the initial matching set.
-
-        The line where we compare the length of the two DataTables and
-        the number of keys is meant to protect against this bug.
-        """
-        if not isinstance(other, DataTable):
-            return False
-        if len(self) != len(other) or len(self.fields) != len(other.fields):
-            return False
-        for selfrow, otherrow in izip(self, other):
-            if selfrow != otherrow:
-                return False
-        return True
+    def __add__(self, other_datatable):
+        return self.concat(other_datatable)
 
     def __contains__(self, fieldname):
         return fieldname in self.__data.viewkeys()
 
     def __delitem__(self, key):
         del self.__data[key]
+
+    def __eq__(self, other):
+        """
+        Note that there is a bug (in my opinion) where two OrderedDicts
+        are considered equal even if one dict has more key-value pairs
+        after the initial matching set.
+
+        The line where we compare the length of the two DataTables and
+        the number of keys is meant to protect against this bug.
+        """
+        if not isinstance(other, DataTable):
+            raise TypeError("Cannot compare DataTables with `%s` "
+                            "for equality" % type(other))
+        if len(self) != len(other) or len(self.fields) != len(other.fields):
+            return False
+        for selfrow, otherrow in izip(self, other):
+            if selfrow != otherrow:
+                return False
+        return True
 
     def __getitem__(self, item):
         """
@@ -312,6 +316,9 @@ class DataTable(object):
         else:
             return len(self.__data.viewvalues().__iter__().next())
 
+    def __repr__(self):
+        return str(self)
+
     def __setitem__(self, fieldname, column):
         """
         Sets a column with the specified name to the specified value:
@@ -338,9 +345,6 @@ class DataTable(object):
             raise Exception("New column length (%s) must match length "
                             "of table (%s)" % (len(column), len(self)))
         self.__data[fieldname] = column
-
-    def __repr__(self):
-        return str(self)
 
     def __str__(self):
         return unicode(self).encode('utf-8')
@@ -541,7 +545,6 @@ class DataTable(object):
         """
         return tuple(unique_everseen(self[fieldname], key=key))
 
-    # TODO: docstring
     def groupby(self, *groupfields):
         """
         Groups rows in this table according to the unique combinations of
@@ -702,20 +705,8 @@ class DataTable(object):
 
     def where(self, fieldname, value, negate=False):
         """
-        Takes either:
-
-        1. A callable (like a function) that returns a bool.
-        2. A container (list, tuple, or set).
-        3. A primitive type (int, float, unicode, str, bool, long).
-
-        Returns a DataTable that has been filtered such that the value
-        for `fieldname` in each row:
-
-        1. Returns True when passed into value.
-        2. Is contained within value.
-        3. Is comparable to value.
-
-        ... for each of the three possible kinds of arguments, respectively.
+        Returns a new DataTable with rows only where the value at
+        `fieldname` == `value`.
         """
         if not negate:
             truth_func = lambda boolean: boolean
@@ -723,14 +714,14 @@ class DataTable(object):
             truth_func = lambda boolean: not boolean
 
         if callable(value):
-            return self.mask([truth_func(value(item))
-                              for item in self[fieldname]])
-        elif isinstance(value, (list, tuple, set)):
-            return self.mask([truth_func(item in value)
-                              for item in self[fieldname]])
+            return self.mask([truth_func(value(elem))
+                              for elem in self[fieldname]])
+        # elif isinstance(value, (list, tuple, set)):
+        #     return self.mask([truth_func(item in value)
+        #                       for item in self[fieldname]])
         elif isinstance(value, (int, float, basestring, bool, long)):
-            return self.mask([truth_func(item == value)
-                              for item in self[fieldname]])
+            return self.mask([truth_func(elem == value)
+                              for elem in self[fieldname]])
         else:
             raise Exception("Unsure how to filter DataTable where value is "
                             "of type: %s" % type(value))
@@ -744,7 +735,29 @@ class DataTable(object):
             truth_func = lambda boolean: boolean
         else:
             truth_func = lambda boolean: not boolean
+
         return self.mask([truth_func(func(item)) for item in self])
+
+    def wherein(self, fieldname, collection):
+        """
+        Returns a new DataTable with rows only where the value at
+        `fieldname` is contained within `collection`.
+        """
+        return self.mask([elem in collection for elem in self[fieldname]])
+
+    def wheregreater(self, fieldname, value):
+        """
+        Returns a new DataTable with rows only where the value at
+        `fieldname` > `value`.
+        """
+        return self.mask([elem > value for elem in self[fieldname]])
+
+    def whereless(self, fieldname, value):
+        """
+        Returns a new DataTable with rows only where the value at
+        `fieldname` < `value`.
+        """
+        return self.mask([elem < value for elem in self[fieldname]])
 
     def wherenot(self, fieldname, value):
         """

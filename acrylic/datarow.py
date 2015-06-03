@@ -1,9 +1,7 @@
 # coding: utf-8
 
-from itertools import izip
-
 """
-This exists because it's the best way that I know of to
+This class factory exists because it's the best way that I know of to
 create an object with:
 
 1. a dict-like mapping
@@ -13,6 +11,8 @@ create an object with:
 This concept was borrowed from the Python standard library's `namedtuple`
 implementation.
 """
+
+from itertools import izip
 
 
 def datarow_constructor(fields):
