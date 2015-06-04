@@ -708,42 +708,34 @@ class DataTable(object):
         Returns a new DataTable with rows only where the value at
         `fieldname` == `value`.
         """
-        if not negate:
-            truth_func = lambda boolean: boolean
-        else:
-            truth_func = lambda boolean: not boolean
-
-        if callable(value):
-            return self.mask([truth_func(value(elem))
-                              for elem in self[fieldname]])
-        # elif isinstance(value, (list, tuple, set)):
-        #     return self.mask([truth_func(item in value)
-        #                       for item in self[fieldname]])
-        elif isinstance(value, (int, float, basestring, bool, long)):
-            return self.mask([truth_func(elem == value)
+        if negate:
+            return self.mask([elem != value
                               for elem in self[fieldname]])
         else:
-            raise Exception("Unsure how to filter DataTable where value is "
-                            "of type: %s" % type(value))
+            return self.mask([elem == value
+                              for elem in self[fieldname]])
 
-    def wherefunc(self, func, negate=True):
+    def wherefunc(self, func, negate=False):
         """
         Applies a function to an entire row and filters the rows based on the
         boolean output of that function.
         """
-        if not negate:
-            truth_func = lambda boolean: boolean
+        if negate:
+            return self.mask([not func(item) for item in self])
         else:
-            truth_func = lambda boolean: not boolean
+            return self.mask([func(item) for item in self])
 
-        return self.mask([truth_func(func(item)) for item in self])
-
-    def wherein(self, fieldname, collection):
+    def wherein(self, fieldname, collection, negate=False):
         """
         Returns a new DataTable with rows only where the value at
         `fieldname` is contained within `collection`.
         """
-        return self.mask([elem in collection for elem in self[fieldname]])
+        if negate:
+            return self.mask([elem not in collection
+                              for elem in self[fieldname]])
+        else:
+            return self.mask([elem in collection
+                              for elem in self[fieldname]])
 
     def wheregreater(self, fieldname, value):
         """
@@ -761,14 +753,21 @@ class DataTable(object):
 
     def wherenot(self, fieldname, value):
         """
-        Exact opposite of `self.where()`.
+        Exact opposite of `self.where`.
         """
         return self.where(fieldname, value, negate=True)
+
+    def wherenotin(self, fieldname, value):
+        """
+        Exact opposite of `self.wherein`.
+        """
+        return self.wherein(fieldname, value, negate=True)
 
     def writecsv(self, path, delimiter=","):
         writer = UnicodeRW.UnicodeWriter(open(path, 'wb'),
                                          self.fields,
-                                         delimiter=delimiter)
+                                         delimiter=delimiter,
+                                         lineterminator=u"\n")
         writer.writerow(self.fields)
         writer.writerows(self)
         writer.close()

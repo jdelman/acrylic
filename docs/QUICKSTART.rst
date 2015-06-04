@@ -1,21 +1,20 @@
-Acrylic Quickstart
-==================
+Acrylic Guide
+=============
 
-Constructing from Python
+Constructing a DataTable
 ------------------------
 
-A DataTable can always be constructed from a list of dictionaries,
-where the keys are the column names, or a list of lists,
-where the first list contains the column names.
+A DataTable can be constructed from:
 
-If the first list doesn't contain the column names, you can pass in a
-`headers=` argument to the constructor.
+1. An iterable of dictionaries, where the keys are the column names.
+    - Use an ``OrderedDict``, pass in ``headers=`` during construction, or reorder columns afterward with ``.reorder``.
+2. An iterable of ``list``-like rows.
+    - Either pass in the headers as the first ``list``-like element, or pass them in via ``headers=``.
+3. A string representing data in CSV-form or similar.
+4. A CSV file.
+5. An Excel file.
 
-If you use `OrderedDict` instead of a standard dictionary,
-column order will be preserved (based off of the first row).
-Otherwise, the order will be lost - but you can always reorder columns later.
-
-DataTable fields (also known as column names, or headers) must be strings:
+DataTable fields (column names, or headers) must be strings:
 
 .. code:: python
 
@@ -30,7 +29,7 @@ DataTable fields (also known as column names, or headers) must be strings:
                       {'name': 'abelardo', 'zipcode': 60153, 'color': 'red'}]
     data.reorder(['name', 'zipcode', 'color'])
 
-The most performant way to create a DataTable is through the `.fromdict`
+The most performant way to create a DataTable is through the ``.fromdict``
 alternative constructor, which can take an OrderedDict. This is the code:
 
 .. code:: python
@@ -53,31 +52,24 @@ Read data from CSV or TSV:
 
 .. code:: python
 
-    csv_data = DataTable.fromcsv('myfile.xls')
-    tsv_data = DataTable.fromcsv('myfile.xls', delimiter="\t")
+    csv_data = DataTable.fromcsv('myfile.csv')
+    tsv_data = DataTable.fromcsv('myfile.tsv', delimiter="\t")
 
-Read data from a copy-pasted CSV Unicode literal:
+Construct a DataTable from a copy-pasted CSV Unicode literal:
 
 .. code:: python
 
-    data = DataTable.fromcsv(ur'''a,b,c
+    data = DataTable.fromcsvstring(ur'''a,b,c
     d,e,f
     g,h,i''')
 
 .. note::
 
-    You should almost always prefix your triple-quoted string with `ur`
-(as in `ur"""string contents"""`) if it's been copy-pasted from Excel.
-If you're copying something printed from Python (using the `print` statement),
-also append `ur`. If you're copying something that was simply dumped to the
-screen (like just typing `objname` at the REPL and hitting "enter" without the
-`print` statement, which only invokes `__repr__` on the object), you should
-prefix only with `u`.
+    You should almost always prefix your triple-quoted string with ``ur`` (as in ``ur"""string contents"""``) if it's been copy-pasted from Excel. If you're copying something printed from Python (using the ``print`` statement), also append ``ur``. If you're copying something that was simply dumped to the screen (like just typing ``objname`` at the REPL and hitting "enter" without the ``print`` statement, which only invokes ``__repr__`` on the object), you should prefix only with ``u``.
 
 .. note::
 
-    Do not try to line up your copy-pasted CSV data for a visual indent.
-That will just add tons of whitespace to the left side of the first column.
+    Do not try to line up your copy-pasted CSV data for a visual indent - it will just add excessive whitespace to the left side of the first column.
 
 *****
 Excel
@@ -102,10 +94,75 @@ Write many DataTables to Excel:
     tables = (Table_one, Table_two)
     excel('output.xls', tables, sheetnames=("one", "two"))
 
-Sheet names will default to "datatable_01", etc. if `sheetnames` isn't provided.
+Sheet names will default to "datatable_01", etc. if ``sheetnames`` isn't provided.
 
-DataTable Methods
------------------
+*****************************
+Iterating through a DataTable
+*****************************
+
+It is possible to iterate through the DataTable row by row, although it is 
+somewhat less efficient. Each row is a ``DataRow`` instances, and 
+is immutable.
+
+Don't alter the DataTable during iteration, or you will be in a state of sin.
+
+^^^^^^^^^^^^^^
+DataRow Object
+^^^^^^^^^^^^^^
+
+Rows are a special class called a ``DataRow``, inspired by ``namedtuple``. 
+It is very lightweight (for a Python object), and is essentially a ``tuple`` 
+with a few additions:
+
+    - It has a ``.items()`` method for iterating through column names and 
+values like you would with a ``dict``.
+    - You can access values like this: ``row['column_name']``, just like a ``dict``.
+    - You can also default-access with ``.get('column_name', default_value)``.
+
+Being a tuple, you can slice (e.g., ``row[0:20:2]``), unpack during iteration,
+and so on.
+
+.. code:: python
+
+    for row in data:
+        for header, value in row.items():
+            # do something
+
+If you're blessed with a small number of columns, why not unpack directly:
+
+.. code:: python
+
+    for name, address, phone_number in data:
+        # do something
+----
+
+Don't try to iterate through the table and mutate each row:
+
+.. code:: python
+
+    for row in data:
+        # TypeError because DataRows are immutable
+        row['doubled_val'] = row['val']**2
+
+Instead, you could do could construct the column separately, and 
+then insert it into the table:
+
+.. code:: python
+
+    double_val = []
+    for row in table:
+        double_val.append(row['val']**2)
+    data['double_val'] = double_val
+
+Or, better in most cases, use ``apply`` or ``mutapply`` - which are 
+described in the next section.
+
+Accessing Data
+--------------
+
+*******
+Columns
+*******
 
 Fetch a column:
 
@@ -116,6 +173,7 @@ Fetch a column:
 Fetch a row, and the value at a column:
 
 .. code:: python
+
     # preferred
     value = data['column_name'][5]  # col, row
 
@@ -126,7 +184,7 @@ These ways also work for fetching a specific cell:
     some_row = data[5]  # fetches row at index 5
     value = some_row['column_name']
 
-    # equivalent, assuming `column_name` is the third column, zero-indexed
+    # equivalent, assuming ``column_name`` is the third column, zero-indexed
     value = data[5][2]  # row, col
 
     # equivalent
@@ -141,63 +199,12 @@ Distinct (unique) values from a column:
 
     brands = data.distinct('brands')
 
-**********************
-Traversing a DataTable
-**********************
+*******
+Slicing
+*******
 
-It is possible to iterate through the DataTable row by row, although it is 
-somewhat less efficient, and the rows are immutable. Each row is a DataRow
-object.
-
-Don't alter the DataTable during iteration, or you will be in a state of sin.
-
-^^^^^^^^^^^^^^
-DataRow Object
-^^^^^^^^^^^^^^
-
-Rows are a special class called a `DataRow`, inspired by `namedtuple`. It is
-very lightweight (for a Python object), and is essentially a `tuple` with
-a few additions:
-
-    - It has a `.items()` method for iterating through column names and values like you would with a `dict`.
-    - You can access values like this: `row['column_name']`, just like a `dict`.
-    - You can also default-access with `.get('column_name', default_value)`.
-
-Being a tuple, you can slice (e.g., `row[0:20:2]`), unpack during iteration,
-and so on.
-
-.. code:: python
-
-    for row in data:
-        for header, value in row.items():
-            # do something
-
-If you're blessed with a small number of columns, why not unpack:
-
-.. code:: python
-
-    for name, address, phone_number in data:
-        # do something
-----
-
-*Don't* try to iterate through the table and mutate each row:
-
-.. code:: python
-
-    for row in data:
-        # TypeError because DataRows are immutable
-        row['doubled_val'] = row['val']**2
-
-Instead, you could do this:
-
-.. code:: python
-
-    double_val = []
-    for row in table:
-        double_val.append(row['val']**2)
-    data['double_val'] = double_val
-
-Or, better in some cases, use `apply` - which is described in the next section.
+Slicing a table, like ``data[4:34:3]``, gracefully handles out of bounds
+slicings and produces a shallow copy - just like a normal Python ``list`` does.
 
 Mutating a DataTable
 --------------------
@@ -220,7 +227,7 @@ that result to a new column.
     data['diff'] = data.apply(lambda row: row['new_count']/row['old_count'])
 
 You may specify which columns you want passed into the function with
-more arguments, as below. Otherwise, the entire `DataRow` is passed into the
+more arguments, as below. Otherwise, the entire ``DataRow`` is passed into the
 function as the only argument.
 
 .. code:: python
@@ -228,39 +235,32 @@ function as the only argument.
     data['diff'] = data.apply(short_diff, 'old_count', 'new_count')
 
 If you want to set a whole column to some "scalar"-like value
-(something that isn't a `list`, `array`, or `tuple`), here is some sugar:
+(something that isn't a ``list``, ``array``, or ``tuple``), here is some sugar:
 
 .. code:: python
 
     data['five'] = 5
     data['notes'] = 'Unknown'
 
-*****************
-Mutating a Column
-*****************
+******************
+Replacing a Column
+******************
 
-As shown above, you can assign the result of an `apply` to a column,
+As shown above, you can assign the result of an ``apply`` to a column,
 overwriting it.
 
-To mutate a column in place, use `mutapply`:
+To mutate a column in place, use ``mutapply``:
 
 .. code:: python
 
     data.mutapply(str.lower, 'name')
 
-*******
-Slicing
-*******
-
-Slicing a table, like `data[4:34:3]`, gracefully handles out of bounds
-slicings and produces a shallow copy - just like a normal Python `list` does.
-
 *************
 Concatenating
 *************
 
-Call `concat` to combine two DataTables, top to bottom. Both tables must have
-the same column names.
+Call ``concat`` to concatenate two DataTables, top to bottom. Both tables must 
+have the same column names (or one may be empty).
 
 .. code:: python
 
@@ -286,9 +286,8 @@ order of importance.
 
     data = data.sort('diff', desc=True).sort('description').sort('searchterm')
 
-Sorting can be done in-place with the `inplace` argument. A reference to the 
-(original, now mutated) DataTable is returned just in case, but the original 
-DataTable is mutated.
+Sorting can be done in-place with the ``inplace`` argument. A reference to the 
+original, now mutated DataTable is returned for convenience.
 
 .. code:: python
 
@@ -322,41 +321,50 @@ The columns will be swapped to match their order.
 Filtering
 ---------
 
-Create a new DataTable in every case where a column equals certain value.
+A family of ``where*`` functions exist to make filtering straight-forward and readable.
+
+- ``where``, checking for equality - ``==``.
+- ``wheregreater``, checking for "greater than" - ``>``.
+- ``whereless``, checking for "less than" - ``<``.
+- ``wherein``, checking for membership - ``in``.
+- ``wherefunc``, using a function which returns a ``bool``-like object to filter rows.
+
+Examples:
 
 .. code:: python
 
     positive_sentences = data.where('sentiment', 'positive')
 
-`where` can also take a `set` or `tuple` to check multiple criteria at once - 
-think of this like an `or`.
+    cheap_products = inventory.whereless('price', 30.0)
+
+``wherein`` can also take a ``set`` or ``tuple`` to check multiple criteria at once - 
+think of this like an ``or``.
 
 .. code:: python
 
-    sentiment_sentences = data.where('sentiment', ('positive', 'negative'))
+    positive_and_negative_sentences = data.wherein('sentiment', ('positive', 'negative'))
 
-`where` can also take a callable. The value at that column for each row gets 
-passed into the callable. Since `where` returns a DataTable instance, you can 
-chain calls of `where`.
+Since all ``where*`` methods return a DataTable instance, we can chain together calls
+like below:
 
 .. code:: python
 
     high_agreement_positives = data.where('sentiment', 'positive')
-                                   .where('agreement', lambda ag: ag >= 0.75)
+                                   .wheregreater('agreement', 0.75)
     true_positives = high_agreement_positives.where('answer', 'positive')
     positive_precision = len(true_positives)/len(high_agreement_positives)
 
-`where` can take a `negate=True` argument to negate whatever condition has been 
-expressed. `wherenot` is equivalent to this.
+``where`` can take a ``negate=True`` argument to negate whatever condition has been 
+expressed (equivalent to ``wherenot``).
 
-.. code:: python
+.. code:: python 
 
-    sentiment_bearing = data.where('answer', ('neutral', 'not_sure'), negate=True)
+    sentiment_bearing = data.wherein('answer', ('neutral', 'not_sure'), negate=True)
 
     # equivalent
-    sentiment_bearing = data.wherenot('answer', ('neutral', 'not_sure'))
+    sentiment_bearing = data.wherenotin('answer', ('neutral', 'not_sure'))
 
-`wherefunc` takes one argument: a function that returns a boolean when passed 
+``wherefunc`` takes one argument: a function that returns a boolean when passed 
 a row of data (an immutable ordered dict-like object).
 
 .. code:: python
@@ -370,17 +378,8 @@ a row of data (an immutable ordered dict-like object).
 
     result = data.wherefunc(conditional_filter)
 
-You can also create a filtered DataTable by passing an iterable of `bool` to 
-the `mask` method.
-
-Groupby
--------
-
-TODO
-
-.. code:: python
-
-    data.groupby
+You can also create a filtered DataTable by passing an iterable of ``bool`` to 
+the ``mask`` method.
 
 Printing
 --------
@@ -395,22 +394,16 @@ using special properties of the DataTable object:
     print data.html    # HTML table
     print data.pretty  # a "pretty table" style table for the console
 
+Groupby
+-------
+
+**TODO**
+
+.. code:: python
+
+    data.groupby
+
 Join
 ----
 
-TODO
-
-Future
-------
-
-- Improve CSV and Excel reading time.
-- Solidify Python 3 support.
-- Improve test coverage.
-- Decide on `.groupby` syntax and write documentation.
-- Implement `.groupby` printing.
-- Decide on `.join` syntax and write documentation.
-- Document cookbook recipes.
-- Improve IPython integration.
-- Write a more thorough introduction.
-- Reconsider Unicode handling for CSV files.
-- Add some way to do comparative filtering.
+**TODO**
