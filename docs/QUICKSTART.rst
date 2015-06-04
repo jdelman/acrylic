@@ -319,11 +319,11 @@ Filtering
 
 A family of ``where*`` functions exist to make filtering straight-forward and readable.
 
-- ``where``, checking for equality - ``==``.
-- ``wheregreater``, checking for "greater than" - ``>``.
-- ``whereless``, checking for "less than" - ``<``.
-- ``wherein``, checking for membership - ``in``.
-- ``wherefunc``, using a function which returns a ``bool``-like object to filter rows.
+- ``where``, checking for equality (``==``).
+- ``wheregreater``, checking for "greater than" (``>``).
+- ``whereless``, checking for "less than" (``<``).
+- ``wherein``/``wherenotin``, checking for membership (``in`` / ``not in``)).
+- ``wherefunc``/``wherenotfunc``, using a function which returns a ``bool``-like object to filter rows.
 
 Examples:
 
@@ -393,11 +393,71 @@ using special properties of the DataTable object:
 Groupby
 -------
 
-**TODO**
+Performing a Group By operation requires three steps:
+
+1. Specification of the keys for grouping.
+2. Providing aggregation functions.
+3. Collecting the results into a new DataTable.
+
+Say we had a table in the following form:
+
++--------------+------------+-----------+
+| departmentid | employeeid | salary    |
++==============+============+===========+
+| 123          | 2          | 20000     |
++--------------+------------+-----------+
+| 382          | 5          | 35000     |
++--------------+------------+-----------+
+| 783          | 6          | 24000     |
++--------------+------------+-----------+
+| 783          | 7          | 47800     |
++--------------+------------+-----------+
+| ...          | ...        | ...       |
++--------------+------------+-----------+
+
+If we wanted the max salary grouped by ``departmentid``, the following code would do that:
 
 .. code:: python
 
-    data.groupby
+    max_salaries_by_department = (data.groupby('department')
+                                  .agg(max, 'salary')
+                                  .collect())
+                                  
+Calling ``.groupby`` returns a ``GroupbyTable`` object, ready for accepting aggregation functions.
+
+Aggregation functions are run on the groupings by calling ``.agg` and passing in your groupby function. Optionally, you may specify any number of fields to pass into your aggregation function (e.g., ``.agg(max, 'salary')`` or ``.agg(calculate_duration, 'start_date', 'end_date')``).
+
+If you pass in one field, your aggregation function will receive a ``list`` of the values for that field for that group. If you pass in more than one field, your aggregation function will receive a ``list`` of ``tuple``s, where each ``tuple`` contains the requested fields for each row. If you pass in no fields, your aggregation function will receive the entire `list`` of ``DataRow`` objects for that grouping.
+
+Calling ``.agg`` adds an aggregation column to the ``GroupbyTable``, and returns the same ``GroupbyTable`` instance. Multiple ``.agg`` can be called in immediate succession.
+
+``collect`` finalizes the groupby by creating a new ``DataTable`` instance representing the . In this case, the table would look something like:
+
++--------------+-------------+
+| departmentid | max(salary) |
++==============+=============+
+| 123          | 20000       |
++--------------+-------------+
+| 382          | 35000       |
++--------------+-------------+
+| 783          | 47800       |
++--------------+-------------+
+| ...          | ...         |
++--------------+-------------+
+
+Here's another example of some groupby code:
+
+.. code:: python
+
+    def most_recent_price(price_and_timestamps):
+        return max(price_and_timestamps, key=lambda row: row[1])[0]
+
+    sales = (orders.groupby('productid')
+                   .agg(sum, 'sale_price')  # col name will be "sum(sale_price)"
+                   .agg(len, name='total_orders'),
+                   .agg(most_recent_price, 'sale_price', 'timestamp', name='most_recent_price')
+                   .collect())
+
 
 Join
 ----
