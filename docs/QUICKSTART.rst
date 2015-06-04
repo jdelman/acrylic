@@ -6,10 +6,8 @@ Constructing a DataTable
 
 A DataTable can be constructed from:
 
-1. An iterable of dictionaries, where the keys are the column names.
-    - Use an ``OrderedDict``, pass in ``headers=`` during construction, or reorder columns afterward with ``.reorder``.
-2. An iterable of ``list``-like rows.
-    - Either pass in the headers as the first ``list``-like element, or pass them in via ``headers=``.
+1. An iterable of dictionaries, where the keys are the column names. (Use an ``OrderedDict``, pass in ``headers=`` during construction, or reorder columns afterward with ``.reorder`.)
+2. An iterable of ``list``-like rows. (Either pass in the headers as the first ``list``-like element, or pass them in via ``headers=``.)
 3. A string representing data in CSV-form or similar.
 4. A CSV file.
 5. An Excel file.
@@ -114,8 +112,7 @@ Rows are a special class called a ``DataRow``, inspired by ``namedtuple``.
 It is very lightweight (for a Python object), and is essentially a ``tuple`` 
 with a few additions:
 
-    - It has a ``.items()`` method for iterating through column names and 
-values like you would with a ``dict``.
+    - It has a ``.items()`` method for iterating through column names and values like you would with a ``dict``.
     - You can access values like this: ``row['column_name']``, just like a ``dict``.
     - You can also default-access with ``.get('column_name', default_value)``.
 
@@ -134,7 +131,6 @@ If you're blessed with a small number of columns, why not unpack directly:
 
     for name, address, phone_number in data:
         # do something
-----
 
 Don't try to iterate through the table and mutate each row:
 
