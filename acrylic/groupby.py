@@ -26,20 +26,16 @@ class GroupbyTable(object):
     DataTable. The resulting DataTable has no "memory" of the GroupbyTable
     from which it was made.
 
-    Here are a few other examples:
+    Here is another example:
 
-    def most_recent_price(dates, prices):
-
-
+    def most_recent_price(price_and_timestamps):
+        return max(price_and_timestamps, key=lambda row: row[1])[0]
 
     sales = (orders.groupby('productid')
-                   .agg([np.mean, np.sum], 'sale_price')
-                   .agg())
-
-
-
-
-
+                   .agg(sum, 'sale_price')  # col name will be "sum(sale_price)"
+                   .agg(len, name='total_orders'),
+                   .agg(most_recent_price, 'sale_price', 'timestamp')
+                   .collect())
 
     """
 
@@ -73,13 +69,24 @@ class GroupbyTable(object):
                 self.__key_to_group_map[key] = [row]
         self.__grouptable['groupkey'] = self.__key_to_group_map.keys()
 
-    def agg(self, func, *fields):
+    def agg(self, func, *fields, **name):
         """
         Calls the aggregation function `func` on each group in the GroubyTable,
         and leaves the results in a new column with the name of the aggregation
         function.
+
+        Call `.agg` with `name='desired_column_name' to choose a column
+        name for this aggregation.
         """
-        if func.__name__ == '<lambda>':
+        if name:
+            if len(name) > 1 or 'name' not in name:
+                raise TypeError("Unknown keyword args passed into `agg`: %s\n"
+                                % name)
+            name = name.get('name', None)
+
+        if name is not None:
+            name = name
+        elif func.__name__ == '<lambda>':
             name = "lambda%04d" % self.__lambda_num
             self.__lambda_num += 1
         else:

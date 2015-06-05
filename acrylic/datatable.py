@@ -753,13 +753,19 @@ class DataTable(object):
 
     def wherenot(self, fieldname, value):
         """
-        Exact opposite of `self.where`.
+        Logical opposite of `where`.
         """
         return self.where(fieldname, value, negate=True)
 
+    def wherenotfunc(self, func):
+        """
+        Logical opposite of `wherefunc`.
+        """
+        return self.wherefunc(func, negate=True)
+
     def wherenotin(self, fieldname, value):
         """
-        Exact opposite of `self.wherein`.
+        Logical opposite of `wherein`.
         """
         return self.wherein(fieldname, value, negate=True)
 
