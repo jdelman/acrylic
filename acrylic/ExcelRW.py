@@ -4,7 +4,8 @@ from collections import OrderedDict
 from openpyxl import load_workbook, Workbook
 from openpyxl import __version__ as openpyxlversion
 
-openpyxlversion = openpyxlversion.split(".")[0]
+openpyxlversion = int(openpyxlversion.split(".")[0])
+
 
 class UnicodeReader(object):
 
