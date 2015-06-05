@@ -2,7 +2,9 @@
 from collections import OrderedDict
 
 from openpyxl import load_workbook, Workbook
+from openpyxl import __version__ as openpyxlversion
 
+openpyxlversion = openpyxlversion.split(".")[0]
 
 class UnicodeReader(object):
 
@@ -59,7 +61,10 @@ class UnicodeWriter(object):
                       " and not an open file.")
             raise Exception(reason)
 
-        self.__wb = Workbook(write_only=True)
+        if openpyxlversion < 2:
+            self.__wb = Workbook()
+        else:
+            self.__wb = Workbook(write_only=True)
         self.__active_sheet = None
         self.__active_sheet_name = None
         self.__sheets = {}
