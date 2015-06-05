@@ -10,7 +10,7 @@ here = path.abspath(path.dirname(__file__))
 
 _version_re = re.compile(r'__version__\s+=\s+(.*)')
 
-with open('click/__init__.py', 'rb') as f:
+with open('acrylic/__init__.py', 'rb') as f:
     version = str(ast.literal_eval(_version_re.search(
         f.read().decode('utf-8')).group(1)))
 

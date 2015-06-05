@@ -1,4 +1,5 @@
 # coding: utf-8
+
 from __future__ import division, print_function
 from array import array
 from collections import OrderedDict
@@ -183,15 +184,12 @@ class DataTable(object):
         copy-pasting from something Python (or similar) printed, use `ur`.
         For something just dumped from Python via __repr__ or some other
         text source that displays escape characters used, use `u`.
+
         ---
-        To build a DataTable from an .xls file, it's quite simple to:
-        reader = ExcelReader('myfile.xls')
-        reader.change_sheet('default')
-        data = DataTable(reader)
-        ---
+
         Implementation notes:
 
-        The following solution was inspired by UnicodeRW.
+        This solution was inspired by UnicodeRW.
         cStringIO.StringIO turns the passed string into a file-like
         (readble) object. The string must be encoded so that StringIO
         presents encoded text.
@@ -252,6 +250,14 @@ class DataTable(object):
         Headers will be inferred automatically, but if you'd prefer
         to load only a subset of all the headers, pass in a list of the
         headers you'd like as `headers`.
+
+        ---
+
+        Alternatively, it's quite simple to:
+
+            reader = ExcelReader('myfile.xls')
+            reader.change_sheet('default')
+            data = DataTable(reader)
         """
         reader = ExcelRW.UnicodeDictReader(path, sheet_name_or_num)
         return cls(reader, headers=headers)
@@ -581,7 +587,8 @@ class DataTable(object):
             masklist = tuple(masklist)
 
         if len(masklist) != len(self):
-            raise Exception("Masklist length must match length of DataTable")
+            raise Exception("Masklist length (%s) must match length "
+                            "of DataTable (%s)" % (len(masklist), len(self)))
 
         new_datatable = DataTable()
         for field in self.fields:
@@ -780,7 +787,7 @@ class DataTable(object):
 
     def writexlsx(self, path, sheetname="default"):
         """
-        Writes this table to an .xlsx file at the specified `path`.
+        Writes this table to an .xlsx file at the specified path.
 
         If you'd like to specify a sheetname, you may do so.
 

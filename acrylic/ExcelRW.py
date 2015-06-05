@@ -1,10 +1,11 @@
 # coding: utf-8
+
 from collections import OrderedDict
 
 from openpyxl import load_workbook, Workbook
-from openpyxl import __version__ as openpyxlversion
+from openpyxl import __version__
 
-openpyxlversion = int(openpyxlversion.split(".")[0])
+openpyxl_version = int(__version__.split(".")[0])
 
 
 class UnicodeReader(object):
@@ -62,7 +63,7 @@ class UnicodeWriter(object):
                       " and not an open file.")
             raise Exception(reason)
 
-        if openpyxlversion < 2:
+        if openpyxl_version < 2:
             self.__wb = Workbook()
         else:
             self.__wb = Workbook(write_only=True)
