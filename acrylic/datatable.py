@@ -20,7 +20,7 @@ import csv
 
 class DataTable(object):
 
-    def __init__(self, iterable=None, headers=None):
+    def __init__(self, iterable=None, headers=None, value_if_missing=None):
         """
         You must pass in an iterable of:
 
@@ -75,6 +75,9 @@ class DataTable(object):
                     try:
                         value = item[field]
                     except KeyError:
+                        if value_if_missing is not None:
+                            self.__data[field].append(value_if_missing)
+                            continue
                         missing = self.__data.viewkeys()-item.viewkeys()
                         raise KeyError("Row %s is missing fields: %s" %
                                        (i, missing))
